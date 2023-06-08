@@ -1,0 +1,466 @@
+$(document).ready(function() {
+    //Disable special characters
+    function IsAlphaNumeric(e, type) {
+        var specialKeys = new Array();
+        specialKeys.push(8); //Backspace
+        specialKeys.push(9); //Tab
+        specialKeys.push(46); //Delete
+        specialKeys.push(36); //Home
+        specialKeys.push(35); //End
+        specialKeys.push(37); //Left
+        specialKeys.push(39); //Right
+        //specialKeys.push(32); //Space
+        var keyCode = e.keyCode == 0 ? e.charCode : e.keyCode;
+        var ret = false;
+        if ((type == 'TextAndNumber')) {
+            ret = ((keyCode >= 48 && keyCode <= 57) || (keyCode >= 65 && keyCode <= 90) || (keyCode >= 97 && keyCode <= 122) || (specialKeys.indexOf(e.keyCode) != -1 && e.charCode != e.keyCode) || (keyCode == 32) || (keyCode == 33) || (keyCode == 64) || (keyCode == 44) || (keyCode == 45) || (keyCode == 46));
+        }
+        return ret;
+    }
+    $(document).on('keypress', '#review_food_delivery', function(e) {
+        var ret = IsAlphaNumeric(e, 'TextAndNumber');
+        return ret;
+    });
+    $(document).on("paste", '#review_food_delivery', function(e) {
+        e.preventDefault();
+    });
+
+    //$('#cartPayment').height($(window).height()); 
+    //$('.stickyHeader').parent().find('.left-off-canvas-menu').height($(document).height());
+    //9ddd2f4726caa76694d6
+    var pusher = new Pusher('9ddd2f4726caa76694d6', {
+        encrypted: true
+    });
+
+
+    for (var i = 0; i < locale_data.live_orders.length; i++) {
+        if (locale_data.live_orders[i].order.status == "cooking") {
+            $("#live_order_status_text_" + locale_data.live_orders[i].order.id).html("Your Order is being cooked")
+            $("#order_status_" + locale_data.live_orders[i].order.id).find("#order_cooking").addClass('orderCooking')
+        }
+        if (locale_data.live_orders[i].order.status == "cooked") {
+            $("#live_order_status_text_" + locale_data.live_orders[i].order.id).html("Your Order has been cooked")
+            $("#order_status_" + locale_data.live_orders[i].order.id).find("#order_cooking").addClass('orderCooked')
+        }
+        if (locale_data.live_orders[i].order.status == "out_for_delivery") {
+            $("#live_order_status_text_" + locale_data.live_orders[i].order.id).html("Your Order is on it's way")
+            $("#order_status_" + locale_data.live_orders[i].order.id).find("#order_cooking").addClass('orderCooked')
+            $("#order_status_" + locale_data.live_orders[i].order.id).find("#order_delivery").addClass('orderOffToYou')
+        }
+        if (locale_data.live_orders[i].order.status == "delivered") {
+            $("#live_order_status_text_" + locale_data.live_orders[i].order.id).html("Your Order has been delivered")
+            $("#order_status_" + locale_data.live_orders[i].order.id).find("#order_cooking").addClass('orderCooked')
+            $("#order_status_" + locale_data.live_orders[i].order.id).find("#order_delivery").addClass('orderDelivered')
+        }
+        var channel = pusher.subscribe(locale_data.env + '_website_channel');
+        channel.bind('order_status_change_' + locale_data.live_orders[i].order.id, function(data) {
+            if (data.data.status == "cooking") {
+                $("#live_order_status_text_" + data.data.order_id).html("Your Order is being cooked")
+                $("#order_status_" + data.data.order_id).find("#order_cooking").addClass('orderCooking')
+            }
+            if (data.data.status == "cooked") {
+                $("#live_order_status_text_" + data.data.order_id).html("Your Order has been cooked")
+                $("#order_status_" + data.data.order_id).find("#order_cooking").addClass('orderCooked')
+            }
+            if (data.data.status == "out_for_delivery") {
+                $("#live_order_status_text_" + data.data.order_id).html("Your Order is on it's way")
+                $("#order_status_" + data.data.order_id).find("#order_delivery").addClass('orderOffToYou')
+            }
+            if (data.data.status == "delivered") {
+                $("#live_order_status_text_" + data.data.order_id).html("Your Order has been delivered")
+                $("#order_status_" + data.data.order_id).find("#order_delivery").addClass('orderDelivered')
+            }
+
+        });
+    }
+
+
+    $('.headerCart').remove(); //to remove cart from this page
+    $('.welcomeUser').remove(); //to remove login button 
+    var food_review, delivery_review;
+    var food_delivery_flag = 0,
+        food_review_flag = 0,
+        delivery_flag = 0;
+    // $('.orderDetail').on("click",function(){
+    //     $(this).parent().find('.viewDetails').toggle();
+    //     $(this).parent().find('.hideDetails').toggle();
+    //     $(this).parent().parent().parent().find('.orderDetailedBill').toggle();
+    // });
+
+    // $('#previousOrderTab').on("click",function(){ 
+    //   $(this).addClass('highlight');
+    //   $(this).siblings().removeClass('highlight');                
+    //   $('#liveOrderSection').hide();
+    //   $('#previousOrderSection').show(); 
+    //   $('#previousOrderDetailsSection').hide();               
+    // });
+    // $('#liveOrderTab').on("click",function(){
+    //     $(this).addClass('highlight');
+    //     $(this).siblings().removeClass('highlight');
+    //    $('#previousOrderSection').hide();
+    //    $('#liveOrderSection').show();      
+    //     $('#previousOrderDetailsSection').hide();    
+    // });  
+
+    $('.rateAndDetails').on("click", function() {
+        var order_id = $(this).closest('.pastOrderBox').find('.previous_order_no').find('strong').text();
+        var previous_order_details = $.grep(locale_data.previous_orders, function(e) {
+            return e.order.id == order_id
+        })
+        $('#previousOrderDetailsSection').remove();
+        // show template
+        var order_detail = _.template($("#previous_order_template").html());
+        $.ajax({
+            url: locale_data.api_url + "feedback/website/check_feedback/" + order_id + ".json",
+            crossDomain: true,
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            headers: {
+                'Client-Os': 'WebApp',
+                'darthvader': locale_data.access_token,
+                'brand-id': 4
+            },
+            success: function(result) {
+                $("#previousOrderSection").closest('div').append(order_detail(previous_order_details[0]));
+                if (result) {
+                    // hide rating details
+                    //$("#rate_review").hide();
+                    //$("#rate_review").next().hide();
+                    $('#food_rating .starRating').raty({ starType: 'i', readOnly: true, score: result.food_feedback });
+                    $('#delivery_rating .starRating').raty({ starType: 'i', readOnly: true, score: result.driver_feedback });
+                    $('#overall_rating .starRating').raty({ starType: 'i', readOnly: true, score: result.overall_feedback });
+                    if (result.comment == null || result.comment == '') {
+                        $(".feedbackMessage").hide();
+                    } else {
+                        $(".feedbackMessage").html('<div class="text-center orderFeedbackComment"><img class="quotes" src="/images/quotes-open.svg" width=8>' + result.comment + '<img class="quotes" src="/images/quotes-closed.svg" width=8></div>');
+                    }
+
+                } else {
+
+                    $('.starRating').raty({ starType: 'i', hints: ['bad', 'poor', 'regular', 'good', 'awesome'] });
+                }
+                //$('.starRating').raty({ starType: 'i',hints: ['bad', 'poor', 'regular', 'good', 'awesome'] });
+                $('#previousOrderSection').hide(); //alert("saved........");
+            },
+            error: function(request, status, error) {
+                if (request.status === 401) {
+                    window.location.href = "/logout";
+                }
+                alert("error...........");
+            }
+        });
+        /*                $("#previousOrderSection").closest('div').append(order_detail(previous_order_details[0]));
+        				$('.starRating').raty({ starType: 'i',hints: ['bad', 'poor', 'regular', 'good', 'awesome'] });
+        				$('#previousOrderSection').hide();*/
+        //$('#previousOrderDetailsSection').show();
+    });
+    $(document).on('click', '#goBackToListing', function() {
+        $('#previousOrderDetailsSection').remove();
+        $('#previousOrderSection').show();
+    });
+    $(document).on('click', '#cancel_feedback', function() {
+        $('#previousOrderDetailsSection').hide();
+        $('#previousOrderSection').show();
+    });
+
+    //Star Ratings 
+    $('.starRating').raty({ starType: 'i', hints: ['bad', 'poor', 'regular', 'good', 'awesome'] });
+    //console.log("live orders....",locale_data.live_orders);
+
+    //Countdown
+
+    //console.log("------",$('.radial-progress').attr("data-prep-time-in-mins"));
+
+
+    // $('.radial-progress').each(function(index,data){
+
+    //   console.log(data);
+
+    //     var data=$(this).attr("data-prep-time-in-mins");
+    //     $(this).find('.minsCounter').html(data);
+    //    // $('.minsCounter').html(data);
+
+    //   var radius = 2.45, // set the radius of the circle
+    //   circumference = 2 * radius * Math.PI; 
+
+
+
+    //   var els = $(this).find('circle');
+    //   //var els = document.querySelectorAll('circle');
+    //   console.log(els)
+
+
+    //    els.each(function(index,data){
+    //      $(this).attr('stroke-dasharray', circumference + 'em');
+
+    //     $(this).attr('r', radius + 'em');
+    //    })
+    //   // Array.prototype.forEach.call(els, function (el) {
+
+    //   //   console.log(el)
+
+    //   //   $(this).attr('stroke-dasharray', circumference + 'em');
+
+    //   //   $(this).attr('r', radius + 'em');
+    //   //   // el.setAttribute('stroke-dasharray', circumference + 'em');
+    //   //   // el.setAttribute('r', radius + 'em');
+    //   // });
+
+    //   //document.querySelector('.radial-progress-center').setAttribute('r', (radius - 0.01 + 'em'));
+    //   //document.querySelector('.radial-progress-background').setAttribute('r', (radius - 0.015 + 'em'));
+
+    //   var currentCount = 0, 
+    //       maxCount = data * 60;
+
+    //   var intervalId = setInterval(function () { 
+    //     if (currentCount >= maxCount) {
+    //       clearInterval(intervalId);
+    //       return;
+    //     }
+    //     var offset = -(circumference / maxCount) * currentCount + 'em';
+    //     //console.log(currentCount, offset);
+
+    //     document.querySelector('.radial-progress-cover').setAttribute('stroke-dashoffset', offset);
+
+    //     currentCount++;
+    //   }, 1000);
+
+    //   //alert($('.minsCounter').html());
+    //   var minsIntervalId = setInterval(function () { 
+    //     if (currentCount >= maxCount) {
+    //       clearInterval(minsIntervalId);
+    //       return;
+    //     }
+
+    //     var minsCounter = $(this).find('.minsCounter').html() - 1;
+    //     //alert($('.minsCounter').html());
+    //     $(this).find('.minsCounter').html(minsCounter);
+
+    //     currentCount++;
+    //   }, 60000);
+
+
+
+
+
+
+    //       //document.querySelectorAll('circle');
+    //   console.log(els)
+
+    //   // svgcountdown($(this).attr("data-prep-time-in-mins"),function(result){
+    //   //  console.log(result);
+    //   // })
+    // });
+
+    //var prepTime = $('.radial-progress').attr("data-prep-time-in-mins");
+
+    // Countdown using SVG Plugin
+    var circles = [];
+
+    for (var i = 0; i < locale_data.live_orders.length; i++) {
+        var current_date_time = moment().utc().format("YYYY-MM-DD HH:mm:ss");
+        var order_date = moment(locale_data.live_orders[i].order.actual_order_date);
+        var differ = moment(current_date_time).diff(order_date, 'minutes');
+
+
+        if (differ > locale_data.live_orders[i].order.promised_time) {
+            differ = 0;
+        } else {
+            differ = locale_data.live_orders[i].order.promised_time - differ;
+        }
+
+
+        //minutes = locale_data.live_orders[i].order.promised_time;
+        //durations.push($(child).attr("data-prep-time-in-mins") * 60000);
+        circle = Circles.create({
+            id: 'orderRemainingTimeSVG' + locale_data.live_orders[i].order.id,
+            value: differ,
+            maxValue: locale_data.live_orders[i].order.promised_time,
+            radius: getWidth(),
+            width: 6,
+            radius: 45,
+            colors: ['#B8B8B8', '#000'],
+            duration: 0,
+            wrpClass: 'minsRemainingSVGWrp',
+            textClass: 'minsRemaining',
+            valueStrokeClass: 'minsRemainingSVGValueStroke',
+            maxValueStrokeClass: 'minsRemainingSVGMaxValueStroke',
+            styleText: false,
+            /* text:       function(value){
+            	var minsRem = this._maxValue;
+            	//console.log(minsRem);
+            	return minsRem + '<div class="minsText">mins<div>';
+              }*/
+            text: differ + '<div class="minsText">mins<div>'
+
+        });
+        //console.log(circle);
+        //console.log(durations[i -1]);
+        circles.push(circle);
+    }
+    //var child = document.getElementById('orderRemainingTimeSVG' + i),
+    //minutes = 21;
+    //console.log("minutes....................",minutes);
+    //durations.push($(child).attr("data-prep-time-in-mins") * 60000);
+
+    //console.log(durations[i -1]);
+    //circles.push(circle);
+
+    //console.log($(child).attr("data-prep-time-in-mins")); 
+
+
+    function getWidth() {
+        return window.innerWidth / 20;
+    }
+    for (var i = 0, l = circles.length; i < l; i++) {
+        if (circles[i]._value == 0) {
+            circles[i].updateColors(['#B8B8B8', '#B8B8B8']);
+        }
+    }
+    setInterval(function() {
+        for (var i = 0, l = circles.length; i < l; i++) {
+            if (circles[i]._value > 0) {
+                circles[i].update(circles[i]._value - 1, 250);
+                var circle_text = circles[i]._text;
+                var new_text = parseInt(circle_text.substring(0, circle_text.indexOf("<"))) - 1;
+                if (new_text >= 0) {
+                    circles[i]._text = new_text + '<div class="minsText">mins<div>'
+                }
+            }
+        }
+        // for(var i = 0, l = circles.length; i <= l; i++) {                 
+        //    var child = document.getElementById('orderRemainingTimeSVG' + i),  
+        //    minutes = $(child).attr("data-prep-time-in-mins");
+        //    console.log(circles[i]);      
+
+        //    circles[i]._text  = minutes-1;
+        // }
+    }, 60000);
+
+    $(document).on('click', '#submit_feedback', function() {
+
+        var feedback_object = {};
+
+        feedback_object.order_id = parseInt($(this).closest('.pastOrderBox').attr('id'));
+        if ($("#food_rating").find('input').val() != '') {
+            feedback_object.food_feedback = parseInt($("#food_rating").find('input').val());
+        }
+        if ($("#delivery_rating").find('input').val() != '') {
+            feedback_object.driver_feedback = parseInt($("#delivery_rating").find('input').val());
+        }
+        if ($("#overall_rating").find('input').val() != '') {
+            feedback_object.overall_feedback = parseInt($("#overall_rating").find('input').val());
+        }
+        //normal review
+        feedback_object.comment = $('#review_food_delivery').val();
+
+
+
+        $.ajax({
+            url: locale_data.api_url + "feedback/website.json",
+            crossDomain: true,
+            data: JSON.stringify(feedback_object),
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            headers: {
+                'Client-Os': 'WebApp',
+                'darthvader': locale_data.access_token
+            },
+            success: function(result) {
+                alert("feedback saved");
+                $('#previousOrderDetailsSection').hide();
+                $('#previousOrderSection').show();
+            },
+            error: function(request, status, error) {
+                if (request.status === 401) {
+                    window.location.href = "/logout";
+                }
+                alert("error while saving feedback");
+            }
+        });
+
+
+        // call api to save the details into feedback table
+
+
+
+    })
+
+    $(document).on('click', '#food_review', function() {
+        //console.log("sasasasss",$('#review_food_delivery').val().indexOf('@foodQuality') == -1);
+        if ($('#review_food_delivery').val().indexOf('@foodQuality') == -1)
+            $('#review_food_delivery').val($('#review_food_delivery').val() + " @foodQuality");
+        //clear text area
+        //$('#review_food_delivery').val($('#review_food_delivery').val() + " @foodQuality");
+
+    })
+
+    $(document).on('click', '#delivery_review', function() {
+        if ($('#review_food_delivery').val().indexOf('@delivery') == -1)
+            $('#review_food_delivery').val($('#review_food_delivery').val() + " @delivery");
+    })
+
+    // Masonry on orders
+    $('.grid').masonry({
+        itemSelector: '.gridItem',
+        columnWidth: '.gridSizer',
+        gutter: '.gutterSizer',
+        percentPosition: true
+    });
+
+});
+
+
+
+
+//     function svgcountdown(data,callback){
+
+//             $('.minsCounter').html(data);
+
+//               var radius = 2.45, // set the radius of the circle
+//               circumference = 2 * radius * Math.PI; 
+
+//               var els = document.querySelectorAll('circle');
+//               console.log(els)
+
+//               Array.prototype.forEach.call(els, function (el) {
+
+//                 console.log(el)
+//                 el.setAttribute('stroke-dasharray', circumference + 'em');
+//                 el.setAttribute('r', radius + 'em');
+//               });
+
+//               //document.querySelector('.radial-progress-center').setAttribute('r', (radius - 0.01 + 'em'));
+//               //document.querySelector('.radial-progress-background').setAttribute('r', (radius - 0.015 + 'em'));
+
+//               var currentCount = 0, 
+//                   maxCount = data * 60;
+
+//               var intervalId = setInterval(function () { 
+//                 if (currentCount >= maxCount) {
+//                   clearInterval(intervalId);
+//                   return;
+//                 }
+//                 var offset = -(circumference / maxCount) * currentCount + 'em';
+//                 //console.log(currentCount, offset);
+
+//                 document.querySelector('.radial-progress-cover').setAttribute('stroke-dashoffset', offset);
+
+//                 currentCount++;
+//               }, 1000);
+
+//               //alert($('.minsCounter').html());
+//               var minsIntervalId = setInterval(function () { 
+//                 if (currentCount >= maxCount) {
+//                   clearInterval(minsIntervalId);
+//                   return;
+//                 }
+
+//                 var minsCounter = $('.minsCounter').html() - 1;
+//                 //alert($('.minsCounter').html());
+//                 $('.minsCounter').html(minsCounter);
+
+//                 currentCount++;
+//               }, 60000);
+// callback("done")
+//     }

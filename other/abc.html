@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+	<input type="text" name="" id="n1"> 
+	<button onclick='javascript: document.getElementById("n1").value++; add()'>+</button>
+	<button onclick='javascript: document.getElementById("n1").value--; add()'>-</button><br><br>
+
+	<input type="text" name="" id="n2">
+	<button onclick='javascript: document.getElementById("n2").value++; add()'>+</button> 
+	<button onclick='javascript: document.getElementById("n2").value--; add()'>-</button><br><br>
+
+	<input type="text" name="" id="n3">
+	<button onclick='javascript: document.getElementById("n3").value++; add()'>+</button> 
+	<button onclick='javascript: document.getElementById("n3").value--; add()'>-</button><br><br>
+
+	<input type="text" name="" id="n4">
+	<button onclick='javascript: document.getElementById("n4").value++; add()'>+</button> 
+	<button onclick='javascript: document.getElementById("n4").value--; add()'>-</button><br><br>
+
+	<input type="text" name="" id="n5">
+	<button onclick='javascript: document.getElementById("n5").value++; add()'>+</button>
+	<button onclick='javascript: document.getElementById("n5").value--; add()'>-</button> <br><br>
+
+	
+	
+
+	<h1>RS. <span id="ans"></span> </h1>
+
+	<script type="text/javascript">
+		function add()
+		{
+			var a = document.getElementById('n1').value;
+			var b = document.getElementById('n2').value;
+			var c = document.getElementById('n3').value;
+			var d = document.getElementById('n4').value;
+			var e = document.getElementById('n5').value;
+
+			var v = a*5;
+			var w = b*10;
+			var x = c*15;
+			var y = d*20;
+			var z = e*5;
+
+			var sum = +v + +w + +x + +y + +z;
+
+			document.getElementById('ans').innerHTML = sum;
+		}
+		
+	</script>
+
+</body>
+</html>					

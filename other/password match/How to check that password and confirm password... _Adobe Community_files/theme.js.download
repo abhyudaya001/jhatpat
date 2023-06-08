@@ -1,0 +1,50 @@
+(function($) { 
+
+	$(document).ready(function() {
+	
+	// ----------------------- GLOBAL HEADER
+		/* CUSTOM NAV MENUS */
+		$(function() {new jive.Navbar.Menu.Custom.Main('#customLink0','#customLink0-menu');});
+		$(function() {new jive.Navbar.Menu.Custom.Main('#customLink1','#customLink1-menu');});
+
+		// GLOBAL HEADER: HOVER + CLICK SEARCH LABEL
+		$('#j-nav-search-li .j-508-label[for="j-nav-search"]').hover(
+			function(e){
+				$("#j-nav-search").addClass('active');
+			},
+			function(e){
+				$("#j-nav-search").removeClass('active');
+			}
+		);
+		$('#j-nav-search-li .j-508-label[for="j-nav-search"]').on('click', function(e){
+			e.preventDefault();
+			$("#j-nav-search").click();
+		});
+	
+	// --------------------------- HOMEPAGE CONTENT
+		// SELECT-JUMP
+		$('body.j-simple-homepage #adobe-select .jumpto').change(function() {
+			window.location = $("#adobe-select option:selected").val();
+		});
+	
+	// --------------------------- PRODUCT PAGES
+		// unanswered / ask automated links
+		$('body.j-body-place #adobe-product-qa .answer a').attr('href', $('#jive-place-link-content').attr('href') + '?filterID=contentstatus%5Bpublished%5D~objecttype~objecttype%5Bthread%5D~thread%5Bopen%5D');
+		$('body.j-body-place #adobe-product-qa .question a').attr('href', '/discussion/create.jspa?containerType=' + window.parent.jive.global.containerType + '&containerID=' + window.parent.jive.global.containerID);
+		
+		// SINGLE CLICK LINKS
+		$('body.j-simple-homepage .area-link').click(function(e){
+			var link = $(this).find('a').attr('href');
+			window.top.location.href = link;
+			e.preventDefault();
+		});
+
+	// ----------------------- BREADCRUMB
+		$('#jive-breadcrumb a[href="/places"]').attr('href','/welcome');
+
+	// ----------------------- WIDGETS
+		$('#jive-widget-container .jive-widget-askaquestionwidget .jive-widget-handle').append('<a href="/community/guidelines" target="_blank">Community Guidelines</a>');
+		$('#jive-widget-container .ask-a-question-container button').addClass('j-btn-callout');
+
+});
+})(jQuery); 

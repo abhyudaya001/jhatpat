@@ -1,0 +1,250 @@
+define("jive.adobe.mt.translate.Main",["adobe.TranslateApp"],function(a){return jive.oo.Class.extend(function(b,c){this.init=function(f){f.resourceRoot="/plugins/machine-translation/resources";var e=new a(f);this.addTranslateLinks(e);var d=this;jive.rte.renderedContent.addListener("renderedContent",function(g){if(g&&"jive-thread-messages-container"===$j(g).attr("id")){d.addTranslateLinks(e)}})};b.addTranslateLinks=function(e){var d=this;$j(".j-thread-post").each(function(){var f=[],g=$j("<li/>");if($j(this).parents("#jive-replies").size()==0){f=[{selector:".js-original-header h1",showAttribution:false},{selector:".j-original-message .jive-rendered-content",showAttribution:true}]}else{f=[{selector:"#"+$j(this).attr("id")+" .jive-rendered-content",showAttribution:true}]}e.addTranslatableRegion(g,f);$j("footer ul",this).append(g)})}})});var Dummy={};Dummy.translate=function(c,a,b){console.log("Translating content: "+a+"/"+c+": ");console.log(b.html());console.log("----")};(function(e){if(!e.support.cors&&e.ajaxTransport&&window.XDomainRequest){var f=/^https?:\/\//i;var g=/^get|post$/i;var d=new RegExp("^"+location.protocol,"i");var a=/text\/html/i;var c=/\/json/i;var b=/\/xml/i;e.ajaxTransport("* text html xml json",function(i,l,j){if(i.crossDomain&&i.async&&g.test(i.type)&&f.test(i.url)&&d.test(i.url)){var h=null;var k=(l.dataType||"").toLowerCase();return{send:function(o,n){h=new XDomainRequest();if(/^\d+$/.test(l.timeout)){h.timeout=l.timeout}h.ontimeout=function(){n(500,"timeout")};h.onload=function(){var u="Content-Length: "+h.responseText.length+"\r\nContent-Type: "+h.contentType;var p={code:200,message:"success"};var r={text:h.responseText};try{if(k==="html"||a.test(h.contentType)){r.html=h.responseText}else{if(k==="json"||(k!=="text"&&c.test(h.contentType))){try{r.json=e.parseJSON(h.responseText)}catch(t){p.code=500;p.message="parseerror"}}else{if(k==="xml"||(k!=="text"&&b.test(h.contentType))){var s=new ActiveXObject("Microsoft.XMLDOM");s.async=false;try{s.loadXML(h.responseText)}catch(t){s=undefined}if(!s||!s.documentElement||s.getElementsByTagName("parsererror").length){p.code=500;p.message="parseerror";throw"Invalid XML: "+h.responseText}r.xml=s}}}}catch(q){throw q}finally{n(p.code,p.message,r,u)}};h.onprogress=function(){};h.onerror=function(){n(500,"error",{text:h.responseText})};var m="";if(l.data){m=(e.type(l.data)==="string")?l.data:e.param(l.data)}h.open(i.type,i.url);h.send(m)},abort:function(){if(h){h.abort()}}}}})}})(jQuery);define("adobe.TranslateApp",["jquery"],function(d){var i=function(q){d.data(document.body,"TranslateApp-options",q)};var j="";i.prototype.addTranslatableRegion=function(r,q){d(r).html(d("<div/>",{"class":"translate-outer-div"}).append(d("<a/>",{href:"#","class":"translate-button",text:"Translate"}).click({translatableRegionSel:q},f)).append(d("<a/>",{href:"#","class":"translate-original-button",style:"display: none",text:"Show Original"}).click({translatableRegionSel:q},e)).append(d("<span/>",{"class":"translate-waiting",style:"display: none",text:"Translating..."})))};function f(s){p();var t=[{label:"English",code:"en_US"},{label:"Français",code:"fr_FR"},{label:"Čeština",code:"cs_CZ"},{label:"Deutsch",code:"de_DE"},{label:"Español",code:"es_ES"},{label:"Italiano",code:"it_IT"},{label:"Nederlands",code:"nl_NL"},{label:"Polski",code:"pl_PL"},{label:"Português",code:"pt_BR"},{label:"Svenska",code:"sv_SE"},{label:"Türkçe",code:"tr_TR"},{label:"Ελληνικά",code:"el_GR"},{label:"русский",code:"ru_RU"}],q,r;d("body").append(g(t,s.data.translatableRegionSel,s.target));q=d(this).offset();q.top=q.top+12;q.left=q.left-10;r=d(window).scrollTop()+d(window).height();if(q.top+d("body .language-dropdown .dropdown ul").first().height()>r){q.top=r-d("body .language-dropdown .dropdown ul").first().height()-12}d("body .language-dropdown").css(q);d("body .language-dropdown .dropdown ul").show();d("body").bind("click.jvtrans",b)}function g(u,t,s){var r='<div class="tw-bs language-dropdown" style="position:absolute; font-size:9pt; font-weight:bold; float:left; font-family: \'adobe-clean\', \'Helvetica Neue\', Arial, sans-serif;z-index:200;">		<div class="dropdown">',q=d("<ul>",{"class":"dropdown-menu",role:"menu","aria-labelledby":"dLabel",html:d("<li>",{role:"presentation","class":"dropdown-header",text:d.data(document.body,"TranslateApp-Select a language")})});d.each(u,function(v,w){q.append(d("<li>",{html:d("<a>",{tabindex:"-1",text:w.label}).click({translatableRegSelector:t},function(x){c(w.code,x.data.translatableRegSelector,s)})}))});return d(r).append(q)}function p(){var q=false;d("body .language-dropdown").each(function(r){d(this).remove();q=true});return q}function b(q){if(!d(q.target).hasClass("translate-button")){p();d("body").unbind("click.jvtrans")}}function k(q,r){a(q);var s="Translation service is temporarily unavailable.";if(r){if(r.indexOf("same language for source and target")!==-1){s="The text could not be translated because it appears to be already in the selected target language."}else{if(r.indexOf("Empty text.")!==-1){s="The text could not be translated because it appears to be empty."}else{if(r.indexOf("No text to detect.")!==-1){s="The text could not be translated because it appears to be empty."}else{if(r.indexOf("LangDetect: Language unrecognized")!==-1){s="Could not determine original language of the text to be translated."}else{if(r.indexOf("Language detection: Unknown language")!==-1){s="Could not determine original language of the text to be translated."}}}}}}alert(s)}function m(q){var r=d(q).parent();d(".translate-button",r).hide();d(".translate-waiting",r).show()}function o(q){var r=d(q).parent();d(".translate-waiting",r).hide();d(".translate-original-button",r).show()}function a(q){var r=d(q).parent();d(".translate-original-button",r).hide();d(".translate-waiting",r).hide();d(".translate-button",r).show()}function n(u){var x="",t="",r=180000,w,s,q;q=d.data(document.body,"TranslateApp-options");if(typeof q.mt_service_url==="undefined"||q.mt_service_url===null||q.mt_service_url===""){x="//mt.adobe.io/CLS/rest/MTEngine/StringTranslation/json";w=window.location.host;if(w.indexOf(".dev.adobe.")!=-1||w.indexOf(".corp.adobe")!=-1||w.indexOf(".dev0")!=-1||w.indexOf(".qa0")!=-1||w.indexOf(".pr0")!=-1||w.indexOf("day.adobe.com")!=-1||w.indexOf("stage.")!=-1||w.indexOf("stage2.")!=-1||w.indexOf("staging.")!=-1){x="//mt-stage.adobe.io/CLS/rest/MTEngine/StringTranslation/json"}}else{x=q.mt_service_url}if(typeof q.service_timeout!=="undefined"&&q.service_timeout!==null&&q.service_timeout!==""){s=Number(i.options.service_timeout);if(!isNaN(s)){r=s}}if(typeof q.mt_service_apiKey==="undefined"||q.mt_service_apiKey===null||q.mt_service_apiKey===""){t="mt_prod";w=window.location.host;if(w.indexOf(".dev.adobe.")!=-1||w.indexOf(".corp.adobe")!=-1||w.indexOf(".dev0")!=-1||w.indexOf(".qa0")!=-1||w.indexOf(".pr0")!=-1||w.indexOf("day.adobe.com")!=-1||w.indexOf("stage.")!=-1||w.indexOf("stage2.")!=-1||w.indexOf("staging.")!=-1){t="mt_stage1"}}else{t=q.mt_service_apiKey}u.url=x;u.timeout=r;u.contentType="application/x-www-form-urlencoded; charset=UTF-8";var v={"x-api-key":t};u.headers=v;j=t;return d.ajax(u)}function l(u,q,t,w){q.data("TranslateApp-Original",q.html());var x="",v,s,r;if(w){v=u.StringTranslation.EngineName;r=d.data(document.body,"TranslateApp-options");s="images/MSTIcon24.png";if(typeof r.resourceRoot!="undefined"&&r.resourceRoot!=null){s=r.resourceRoot+"/"+s}x='<br/><p class="accordion-adobe-home-featured-adobegrey"><img src="'+s+'" style="vertical-align:middle;"/>&nbsp;&nbsp;'+d.data(document.body,"TranslateApp-Translations by")+" Microsoft® Translator</p>"}q.html(u.StringTranslation.TranslatedText+x)}function c(t,s,r){var q="";var u="";var v;options=d.data(document.body,"TranslateApp-options");if(j!=""){u=j}else{}d.each(s,function(w,x){d(x.selector).each(function(){q=q+'<span class="str_to_translate">'+d(this).html()+"</span>"})});n({context:document.body,data:{to:t,str:q},type:"POST",beforeSend:function(w){m(r)},headers:{"x-api-key":j}}).then(function(B,w,z){var A="General Failure";if(B!=null&&B.StringTranslation.Status=="Success"){var x=[];d("<div/>").html(B.StringTranslation.TranslatedText).find("span.str_to_translate").each(function(C,D){x.push(jQuery(D).html())});var y=0;d.each(s,function(C,D){d(D.selector).each(function(){B.StringTranslation.TranslatedText=x[y];l(B,d(this),t,D.showAttribution);y++;if(y>x.length){return false}})});o(r)}else{if(B!=null&&typeof B.StringTranslation!="undefined"&&typeof B.StringTranslation.Status!="undefined"){A=B.StringTranslation.Status}k(r,A)}if(A.indexOf("same language for source and target")==-1){if(typeof omniture_translate=="function"){omniture_translate(t)}}});return"done"}function e(s){var r=s.data.translatableRegionSel,q=s.target;d.each(r,function(t,u){d(u.selector).each(function(v,x){var w=d(x);w.html(w.data("TranslateApp-Original"))})});a(q)}function h(r){if(r==null){r="en_US"}var q={en_US:[{label:"Translate",value:"Translate"},{label:"Show original",value:"Show original"},{label:"Select a language",value:"Select a language"},{label:"Translation service not available",value:"Translation service not available"},{label:"Translations by",value:"Translations by"}]};d.each(q[r],function(s,t){d.data(document.body,"TranslateApp-"+t.label,t.value)})}d(function(){d.data(document.body,"TranslateApp-locale","en_US");h(d.data(document.body,"TranslateApp-locale"))});return i});
+;
+/**
+ *
+ *  Base64 encode / decode
+ *  http://www.webtoolkit.info/
+ *
+ **/
+
+var Base64 = {
+
+    // private property
+    _keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+
+    // public method for encoding
+    encode : function (input) {
+        var output = "";
+        var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
+        var i = 0;
+
+        input = Base64._utf8_encode(input);
+
+        while (i < input.length) {
+
+            chr1 = input.charCodeAt(i++);
+            chr2 = input.charCodeAt(i++);
+            chr3 = input.charCodeAt(i++);
+
+            enc1 = chr1 >> 2;
+            enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+            enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+            enc4 = chr3 & 63;
+
+            if (isNaN(chr2)) {
+                enc3 = enc4 = 64;
+            } else if (isNaN(chr3)) {
+                enc4 = 64;
+            }
+
+            output = output +
+                this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) +
+                this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
+
+        }
+
+        return output;
+    },
+
+    // public method for decoding
+    decode : function (input) {
+        var output = "";
+        var chr1, chr2, chr3;
+        var enc1, enc2, enc3, enc4;
+        var i = 0;
+
+        input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+
+        while (i < input.length) {
+
+            enc1 = this._keyStr.indexOf(input.charAt(i++));
+            enc2 = this._keyStr.indexOf(input.charAt(i++));
+            enc3 = this._keyStr.indexOf(input.charAt(i++));
+            enc4 = this._keyStr.indexOf(input.charAt(i++));
+
+            chr1 = (enc1 << 2) | (enc2 >> 4);
+            chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+            chr3 = ((enc3 & 3) << 6) | enc4;
+
+            output = output + String.fromCharCode(chr1);
+
+            if (enc3 != 64) {
+                output = output + String.fromCharCode(chr2);
+            }
+            if (enc4 != 64) {
+                output = output + String.fromCharCode(chr3);
+            }
+
+        }
+
+        output = Base64._utf8_decode(output);
+
+        return output;
+
+    },
+
+    // private method for UTF-8 encoding
+    _utf8_encode : function (string) {
+        string = string.replace(/\r\n/g,"\n");
+        var utftext = "";
+
+        for (var n = 0; n < string.length; n++) {
+
+            var c = string.charCodeAt(n);
+
+            if (c < 128) {
+                utftext += String.fromCharCode(c);
+            }
+            else if((c > 127) && (c < 2048)) {
+                utftext += String.fromCharCode((c >> 6) | 192);
+                utftext += String.fromCharCode((c & 63) | 128);
+            }
+            else {
+                utftext += String.fromCharCode((c >> 12) | 224);
+                utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+                utftext += String.fromCharCode((c & 63) | 128);
+            }
+
+        }
+
+        return utftext;
+    },
+
+    // private method for UTF-8 decoding
+    _utf8_decode : function (utftext) {
+        var string = "";
+        var i = 0;
+        var c = c1 = c2 = 0;
+
+        while ( i < utftext.length ) {
+
+            c = utftext.charCodeAt(i);
+
+            if (c < 128) {
+                string += String.fromCharCode(c);
+                i++;
+            }
+            else if((c > 191) && (c < 224)) {
+                c2 = utftext.charCodeAt(i+1);
+                string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
+                i += 2;
+            }
+            else {
+                c2 = utftext.charCodeAt(i+1);
+                c3 = utftext.charCodeAt(i+2);
+                string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
+                i += 3;
+            }
+
+        }
+
+        return string;
+    }
+
+}
+;
+/**
+ * Created by: sukamat
+ * Date: 2/3/14
+ *
+ **/
+
+var A_SSO = {
+    idp_endpoint: 'https://adobeid-na1.services.adobe.com/ims',
+    data: {
+        client_id: 'forums1',
+        scope: 'AdobeID,openid',
+        rm_time: 14*24,
+        gen_time: 4
+    },
+
+    checkCookieForRedirect: function() {
+        if (this.hasCookie("WCDServer") || this.hasCookie("RengaRMT")) {
+            this.imsCheck();
+        }
+    },
+
+
+    imsCheck: function() {
+        $j.ajax({
+            url: this.idp_endpoint + "/check/v1/token",
+            timeout: 25000,
+            dataType: 'jsonp',
+            data: {
+                client_id: this.data.client_id,
+                scope: this.data.scope
+            },
+            success: function (response) {
+                // logout if ims cookie is invalid
+                if (response.hasOwnProperty('error')) {
+                    var ref = document.referrer;
+                    if (ref!=null && ref.length !=0 && ref.indexOf("/adobe_login")==-1) {
+                        window.location.replace(ref);
+                    } else {
+                        window.location.replace("https://"+document.domain);
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log(error);
+            }
+        });
+    },
+
+    hasCookie: function (cname) {
+        var name = cname + "=";
+        var ca = document.cookie.split(';');
+        for(var i=0; i<ca.length; i++)
+        {
+            var c = ca[i].trim();
+            if (c.indexOf(name)==0) return true;
+        }
+        return false;
+    },
+
+    setCookie: function(name, value, hours) {
+        var expires = "";
+
+        if (hours) {
+            var date = new Date();
+            date.setTime(date.getTime() + (hours * 60 * 60 * 1000));
+            expires = "; expires=" + date.toGMTString();
+        }
+        document.cookie = name + "=" + value + expires + "; path=/; secure";
+    },
+
+    getCookie: function(name) {
+        var nameEQ = name + "=";
+        var ca = document.cookie.split(';');
+        var i = 0;
+
+        for (i = 0; i < ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') { c = c.substring(1, c.length); }
+            if (c.indexOf(nameEQ) === 0) { return c.substring(nameEQ.length, c.length); }
+        }
+
+        return null;
+    }
+
+
+};
+;
+/**
+ *
+ * @depends path=/plugins/adobe-sso/resources/script/wtk.base64.js
+ * @depends path=/plugins/adobe-sso/resources/script/sso_redirect.js
+ *
+ */
+define('jive.adobe.sso.Main', [], function() {
+    return jive.oo.Class.extend(function(protect, _super) {
+
+        this.init = function(options) {
+            if (typeof options.imsServer != 'undefined' && options.imsServer != null && options.imsServer != '') {
+                A_SSO.idp_endpoint = options.imsServer + '/ims';
+            }
+            A_SSO.checkCookieForRedirect();
+        };
+    });
+});
+;

@@ -1,0 +1,78 @@
+
+
+//$(".simpl_option_select").hide();
+
+function handleCitrusPaymentOptions(citrusPaymentOptions) {
+  if (citrusPaymentOptions.netBanking != null)
+    for (i = 0; i < citrusPaymentOptions.netBanking.length; i++) {
+      var obj = document.getElementById("citrusAvailableOptions");
+      var option = document.createElement("option");
+      option.text = citrusPaymentOptions.netBanking[i].bankName;
+      option.value = citrusPaymentOptions.netBanking[i].issuerCode;
+      obj.add(option);
+    }
+}
+
+
+function handlePaytmPaymentOptions(paytmPaymentOptions) {
+/*  if (paytmPaymentOptions.netBanking != null)
+    for (i = 0; i < paytmPaymentOptions.netBanking.length; i++) {
+      var obj = document.getElementById("paytmAvailableOptions");
+      var option = document.createElement("option");
+      option.text = paytmPaymentOptions.netBanking[i].bankName;
+      option.value = paytmPaymentOptions.netBanking[i].issuerCode;
+      obj.add(option);
+    }*/
+}
+
+/*$("#citrusCardPayButton").on("click", function () {
+ makePayment("card")
+ });*/
+
+function citrusServerErrorMsg(errorResponse) {
+  var alert_card = _.template($('#alert_err_messages').html());
+  $("#alert_card").empty();
+  $("#alert_card").append(alert_card({alert_message: errorResponse.txMsg}));
+  $(document).foundation('reflow');
+}
+function citrusClientErrMsg(errorResponse) {
+  var alert_card = _.template($('#alert_err_messages').html());
+  $("#alert_card").empty();
+  $("#alert_card").append(alert_card({alert_message: errorResponse}));
+  $(document).foundation('reflow');
+}
+
+function alert_err_message(message) {
+  var alert_main = _.template($('#alert_err_messages').html());
+  $("#alert_main").empty();
+  $("#alert_main").append(alert_main({alert_message: message}));
+  $(document).foundation('reflow');
+}
+
+function paytmClientErrMsg(errorResponse) {
+  var alert_card = _.template($('#alert_err_messages').html());
+  $("#alert_card").empty();
+  $("#alert_card").append(alert_card({alert_message: errorResponse}));
+  $(document).foundation('reflow');
+}
+
+function alert_err_message(message) {
+  var alert_main = _.template($('#alert_err_messages').html());
+  $("#alert_main").empty();
+  $("#alert_main").append(alert_main({alert_message: message}));
+  $(document).foundation('reflow');
+}
+
+function paytmServerErrorMsg(errorResponse) {
+  var alert_card = _.template($('#alert_err_messages').html());
+  $("#alert_card").empty();
+  $("#alert_card").append(alert_card({alert_message: errorResponse.txMsg}));
+  $(document).foundation('reflow');
+}
+
+function phonepeDismissErrorMsg(errorMsg) {
+  var paymentFailureTemplate = _.template($('#alert_err_messages').html());
+  $("#paymentFailureMsg").empty();
+  $("#paymentFailureMsg").append(paymentFailureTemplate({alert_message: errorMsg}));
+  $(document).foundation('reflow');
+}

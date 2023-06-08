@@ -1,0 +1,476 @@
+_satellite.pushAsyncScript(function(event, target, $variables){
+  
+//DTM Rules
+var prep_return = function(target_str) {
+    if (typeof target_str === "string") {
+        var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+        return target_str.replace(rtrim, "").toLowerCase();
+    } else {
+        return "";
+    }
+};
+
+var get_solution_name = function() {
+    if (window.digitalData && digitalData.page && digitalData.page.solution && digitalData.page.solution.name) {
+        return map_solution_name(digitalData.page.solution.name);
+    }
+};
+
+var get_page_env = function() {
+    if (window.digitalData && digitalData.page && digitalData.page.env)
+        return prep_return(digitalData.page.env);
+};
+
+var get_page_hierarchy = function() {
+    if (window.digitalData && digitalData.page && digitalData.page.hierarchy)
+        return prep_return(digitalData.page.hierarchy);
+};
+
+var map_solution_name = function(solution_str) {
+    switch (solution_str.toLowerCase().trim()) {
+        case "adobe analytics":
+        case "analytics":
+            return "aa";
+        case "adobe audience manager":
+        case "audience manager":
+            return "aam";
+        case "adobe campaign":
+        case "campaign":
+            return "ac";
+        case "adobe experience manager":
+        case "experience manager":
+            return "aem";
+        case "adobe livefyre":
+        case "livefyre":
+            return "alf";
+        case "adobe experience cloud":
+        case "adobe marketing cloud":
+        case "marketing cloud":
+            return "amc";
+        case "adobe media optimizer":
+        case "media optimizer":
+            return "amo";
+        case "adobe social":
+        case "social":
+            return "as";
+        case "adobe target":
+        case "target":
+            return "at";
+        case "adobe dynamic tag management":
+        case "dynamic tag management":
+        case "adobe launch":
+        case "launch":
+            return "dtm";
+        default:
+            return prep_return(solution_str).replace(" ", "-");
+    }
+};
+
+var date_format_check = function() {
+    var od = new Date('1/1/2000'); //get a new date for the date specified
+    if (od.getDay() != 6 || od.getMonth() !== 0) { //ensure that the format is correct
+        return false; //return 'Data Not Available'
+    }
+    return true;
+};
+
+var get_DST = function() {
+    return {
+        2016: '3/13,11/6',
+        2017: '3/12,11/5',
+        2018: '3/11,11/4',
+        2019: '3/10,11/3',
+        2020: '3/8,11/1',
+        2021: '3/14,11/7',
+        2022: '3/13,11/6',
+        2023: '3/12,11/5',
+        2024: '3/10,11/3',
+        2025: '3/9,11/2',
+        2026: '3/8,11/1',
+        2027: '3/14,11/7'
+    };
+};
+
+var time_stamp = function() {
+    if (!date_format_check) { //ensure that the format is correct
+        return 'Data Not Available'; //return 'Data Not Available'
+    } else {
+        var hour, minute, day, dow, aop, ds, de, time, DST, dso, hemi,
+            da = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+            d = new Date(),
+            a = [];
+
+        // timezone == MT
+        z = -6;
+
+        //US Daylight Savings
+        DST = get_DST();
+
+        dso = DST[d.getFullYear()].split(/,/);
+        ds = new Date(dso[0] + '/' + d.getFullYear());
+        de = new Date(dso[1] + '/' + d.getFullYear());
+        if (hemi == 'n' && d > ds && d < de) { //If we are in daylight savings time, do the following
+            z = z + 1; //add 1 to the timezone
+        } else if (hemi == 's' && (d > de || d < ds)) {
+            z = z + 1;
+        }
+
+
+        d = d.getTime() + (d.getTimezoneOffset() * 60000); // reformatting the time for the daylight savings offset
+        d = new Date(d + (3600000 * z)); // offsetting for daylight savings, and then formatting back 
+        hour = d.getHours(); //get the hour
+        minute = d.getMinutes(); //get the minutes
+        minute = (minute < 10) ? '0' + minute : minute; //prepend a '0' to minutes less than 10
+        day = d.getDay(); //get today's day
+        aop = 'AM'; //set the time to 'AM'
+        dow = 'Weekday'; // and the day to Weekday
+        if (hour >= 12) { //set the hours to 'PM' if the hour is after 12
+            aop = 'PM';
+            hour = hour - 12;
+        }
+        if (hour === 0) { //if the hours are in the afternoon, set the hours to a value inbetween 0 and 12
+            hour = 12;
+        }
+        if (day == 6 || day === 0) { //if the date is Sat or Sun (0 or 6) set to Weekend
+            dow = 'Weekend';
+        }
+        day = da[day]; //change the day number to the friendly name
+        time = hour + ':' + minute + aop; //set exact min interval
+        a = time + '|' + day + '|' + dow;
+        return a;
+    }
+
+};
+
+var date_stamp = function() {
+    if (!date_format_check) { //ensure that the format is correct
+        return 'Data Not Available'; //return 'Data Not Available'
+    } else {
+        var year, month, day, dso, ds, de, DST, hemi, z;
+        d = new Date();
+        // timezone == MT
+        z = -6;
+        //US Daylight Savings
+        DST = get_DST();
+        dso = DST[d.getFullYear()].split(/,/);
+        ds = new Date(dso[0] + '/' + d.getFullYear());
+        de = new Date(dso[1] + '/' + d.getFullYear());
+        if (hemi == 'n' && d > ds && d < de) { //If we are in daylight savings time, do the following
+            z = z + 1; //add 1 to the timezone
+        } else if (hemi == 's' && (d > de || d < ds)) {
+            z = z + 1;
+        }
+
+
+        d = d.getTime() + (d.getTimezoneOffset() * 60000); // reformatting the time for the daylight savings offset
+        d = new Date(d + (3600000 * z)); // offsetting for daylight savings, and then formatting back
+        year = d.getFullYear(); //get the year
+        month = String(d.getMonth() + 1); //get the month
+        month = month.length > 1 ? month : "0" + month;
+        day = d.getDate(); //get day of month
+        return year + "-" + month + "-" + day;
+    }
+};
+
+var get_previous_value = function(current_val, cookie_name) {
+    var timestamp = new Date(),
+        var_to_persist = '',
+        previous_value = '';
+
+    cookie_name = cookie_name ? cookie_name : 'so_ppn';
+
+    if (current_val) {
+        var_to_persist = current_val;
+    }
+    timestamp.setTime(timestamp.getTime() + 1800000);
+    if (somg.c_r(cookie_name)) {
+        previous_value = somg.c_r(cookie_name);
+    }
+    if (var_to_persist) {
+        somg.c_w(cookie_name, var_to_persist, timestamp);
+    } else {
+        somg.c_w(cookie_name, 'no value', timestamp);
+    }
+    return previous_value;
+};
+
+
+var cRec = function(item, cArr) {
+    switch (Object.prototype.toString.call(cArr)) {
+        case "[object String]":
+            cArr = cArr.split(".");
+            break;
+        case "[object Array]":
+            break;
+        default:
+            return "cRec cArr type error";
+    }
+    var ret_v = [];
+    for (var key in item) {
+        var cleanArr = cArr.slice(0);
+        if (Object.prototype.hasOwnProperty.call(item, key)) {
+            var val = item[key];
+            if (Object.prototype.toString.call(val) === "[object Object]") {
+                cleanArr.push(key);
+                ret_v = ret_v.concat(cRec(val, cleanArr));
+            } else {
+                if (val) {
+                    cleanArr.push(key);
+                    var final_key = cleanArr.join('.');
+                    var qkObj = {};
+                    qkObj[final_key] = val;
+                    ret_v.push(qkObj);
+                }
+            }
+        }
+    }
+    return ret_v;
+};
+
+var clearC = function() {
+    var somg = this;
+    for (var k in somg.contextData) {
+        if (Object.prototype.hasOwnProperty.call(somg.contextData, k)) {
+            delete somg.contextData[k];
+        }
+    }
+		for (var i=0; i<250; i++) {
+			somg['eVar' + i] = '';
+			if(i <= 75)
+				somg['prop' + i] = '';
+			if(i <= 5)
+				somg['hier' + i] = '';
+		}
+		["pageName", "channel", "products", "events", "campaign", "purchaseID", "state", "zip", "server", "linkName"]
+		.forEach(function(x){somg[x] = ""})
+};
+
+
+var setC = function(objArr) {
+    var somg = this;
+    if (Object.prototype.toString.call(objArr) === "[object Array]") {
+        for (var i = 0; i < objArr.length; i++) {
+            for (var key in objArr[i]) {
+                if (Object.prototype.hasOwnProperty.call(objArr[i], key)) {
+                    var val = objArr[i][key];
+                    somg.contextData[key] = val;
+                }
+            }
+        }
+    }
+};
+
+var merchandize_products = function(target_object, key_evar, val_evar) {
+    if (typeof target_object === "object") {
+        var attributes = target_object;
+        var p_arr = [];
+        for (var key in attributes) {
+            if (Object.prototype.hasOwnProperty.call(attributes, key)) {
+                var val = attributes[key];
+                p_arr.push(";;;;;" + val_evar + "=" + val + "|" + key_evar + "=" + key);
+            }
+        }
+        return p_arr.join(',');
+    }
+};
+
+var select_rs = function() {
+    var suffix, grs, rs, hier, account, env;
+    grs = 'amc.global.';
+    rs = get_solution_name();
+    env = get_page_env();
+    if (_satellite.settings.isStaging) {
+        suffix = "dev";
+    } else if (env) {
+        if (env !== "production" && env !== "prod" && env !== "beta") {
+            suffix = "dev";
+        } else {
+            suffix = "prod";
+        }
+    } else {
+        suffix = "prod";
+    }
+    if (rs) {
+        account = grs + suffix + ',amc.' + rs + '.' + suffix;
+    } else {
+        account = grs + suffix;
+    }
+    hier = get_page_hierarchy();
+    if (typeof(hier) === 'string') {
+        if (hier.indexOf('help') === 0 || hier.indexOf('docs') === 0) {
+            account = account + ',amc.help.' + suffix;
+        } else if (hier.indexOf('community') === 0) {
+            account = account + ',amc.community.' + suffix;
+        }
+    }
+    return account;
+};
+
+window.somg = s_gi(select_rs());
+somg.visitor = Visitor.getInstance("8F99160E571FC0427F000101@AdobeOrg", {
+  trackingServer: "amcglobal.sc.omtrdc.net",
+  disableIdSyncs: true,
+  disableThirdPartyCalls: true
+});
+somg.map_solution_name = map_solution_name;
+somg.omega_time_stamp = time_stamp;
+somg.omega_date_stamp = date_stamp;
+somg.omega_setC = setC;
+somg.omega_merchandize_products = merchandize_products;
+somg.omega_cRec = cRec;
+somg.omega_clearC = clearC;
+somg.get_previous_value = get_previous_value;
+
+
+if (window.somg) {
+    somg.trackingServer = "amcglobal.sc.omtrdc.net";
+    somg.visitorNamespace = "omega";
+    somg.events = "event1";
+    if (window.digitalData) {
+        var prod_array = [];
+        // page mapping
+        if (digitalData.page &&
+            digitalData.page.name &&
+            digitalData.page.hierarchy &&
+            digitalData.page.solution &&
+            digitalData.page.solution.name &&
+            somg.map_solution_name) {
+            var sol_name = somg.map_solution_name(digitalData.page.solution.name).toLowerCase();
+            somg.pageName = sol_name + ":" + digitalData.page.hierarchy.toLowerCase() + ":" + digitalData.page.name.toLowerCase();
+            somg.eVar1 = "D=pageName";
+            if (sol_name.indexOf("launch") > -1){
+                somg.eVar2 = "dtm:launch";
+            }else{
+                somg.eVar2 = digitalData.page.solution.hasOwnProperty("version") ? sol_name + ":" + digitalData.page.solution.version.toLowerCase(): sol_name + ":na";
+            }
+            somg.eVar4 = somg.omega_date_stamp().toLowerCase();
+            somg.eVar5 = somg.omega_time_stamp().toLowerCase();
+            somg.eVar33 = digitalData.page.url ? digitalData.page.url : document.URL;
+            if (digitalData.page.attributes) {
+                prod_array.push(somg.omega_merchandize_products(digitalData.page.attributes, "evar21", "evar22"));
+            }
+            if (digitalData.page.facets) {
+                prod_array.push(somg.omega_merchandize_products(digitalData.page.facets, "evar23", "evar22"));
+            }
+            if (digitalData.page.search) {
+                if (digitalData.page.search.term) {
+                    somg.eVar19 = digitalData.page.search.term;
+                    somg.events = somg.events ? somg.events + ",event3" : "event3";
+                }
+                if (digitalData.page.search.facets) {
+                    prod_array.push(somg.omega_merchandize_products(digitalData.page.search.facets, "evar31", "evar32"));
+                }
+            }
+            if (digitalData.page.env) {
+                somg.eVar34 = digitalData.page.env.toLowerCase();
+            }
+            if (digitalData.page.type) {
+                somg.eVar36 = digitalData.page.type.toLowerCase();
+            }
+            somg.omega_setC(somg.omega_cRec(digitalData.page, "page"));
+            somg.eVar36 = somg.get_previous_value(somg.pageName);
+        }
+
+        if (digitalData.user &&
+            digitalData.user.corpId &&
+            digitalData.user.corpName &&
+            digitalData.user.language &&
+            digitalData.user.authSystem &&
+            digitalData.user.authOrigin) {
+            somg.eVar6 = digitalData.user.corpId;
+            somg.eVar7 = digitalData.user.corpName;
+            somg.eVar12 = digitalData.user.authSystem;
+            somg.eVar8 = digitalData.user.authSystem + ":" + digitalData.user.corpId + ":" + digitalData.user.id;
+            somg.eVar10 = digitalData.user.accountType;
+            if (digitalData.user.attributes) {
+                prod_array.push(somg.omega_merchandize_products(digitalData.user.attributes, "evar25", "evar26"));
+            }
+            somg.omega_setC(somg.omega_cRec(digitalData.user, "user"));
+
+            somg.eVar11 = digitalData.user.language;
+            var c_lang = somg.c_r("lang");
+            if (somg.eVar11) {
+                if (!c_lang) {
+                    somg.c_w("lang", somg.eVar11, 0);
+                } else {
+                    if (somg.eVar11 !== c_lang) {
+                        somg.events = somg.events ? somg.events + ",event4" : "event4";
+                        somg.c_w("lang", somg.eVar11, 0);
+                    }
+                }
+            }
+        }
+        somg.products = prod_array.length > 0 ? prod_array.join(',') : "";
+        somg.t();
+    }
+}
+
+somg.omega_clearC();
+
+if (
+    window.location.hostname.indexOf('adminconsole.adobe.com') !== -1
+) {
+    //Global container : nonacdc report suite configuration for one console
+    if (window.s_adbadobenonacdc) {
+        // s_adbadobenonacdc.products = prod_array.length > 0 ? prod_array.join(',') : "";
+        var env = _satellite.getVar('adbadobeoneconsole_page_env');
+
+        if (_satellite.settings.isStaging || (env !== "production" && env !== "prod" && env !== "beta")) {
+            s_adbadobenonacdc.account = "adbadobenonacdcqa";
+        } else {
+            s_adbadobenonacdc.account = "adbadobenonacdcprod";
+        }
+        if (window.digitalData) {
+            var prod_array = [];
+            // page mapping
+            if (digitalData.page &&
+                digitalData.page.name &&
+                digitalData.page.hierarchy &&
+                digitalData.page.solution &&
+                digitalData.page.solution.name) {
+                var sol_name = somg.map_solution_name(digitalData.page.solution.name).toLowerCase();
+                s_adbadobenonacdc.pageName = sol_name + ":" + digitalData.page.hierarchy.toLowerCase() + ":" + digitalData.page.name.toLowerCase();
+                s_adbadobenonacdc.eVar28 = digitalData.page.url ? digitalData.page.url : document.URL;
+                if (digitalData.page.search) {
+                    if (digitalData.page.search.term) {
+                        s_adbadobenonacdc.eVar19 = digitalData.page.search.term; //seacrh evar and event
+                        s_adbadobenonacdc.events = s_adbadobenonacdc.events ? s_adbadobenonacdc.events + ",event3" : "event3";
+                    }
+                }
+                if (digitalData.page.type) {
+                    s_adbadobenonacdc.eVar36 = digitalData.page.type.toLowerCase();
+                }
+            }
+            if (digitalData.user &&
+                digitalData.user.corpId &&
+                digitalData.user.corpName &&
+                digitalData.user.language &&
+                digitalData.user.authSystem &&
+                digitalData.user.id) {
+                var user_lan = digitalData.user.language.toLowerCase();
+                if (user_lan.indexOf(":") > -1) {
+                    user_lan = /:(.+)/.exec(user_lan)[1];
+                }
+                s_adbadobenonacdc.prop4 = user_lan;
+                s_adbadobenonacdc.prop5 = s_adbadobenonacdc.prop4 + ":" + s_adbadobenonacdc.pageName;
+                s_adbadobenonacdc.eVar12 = digitalData.user.id.replace('@AdobeID', '');
+                if (window.adobeIMS) {
+                    s_adbadobenonacdc.prop27 = adobeIMS.isSignedInUser() ? "SignedIn" : "NotSignedIn";
+                }
+                s_adbadobenonacdc.eVar84 = "D=c27";
+                s_adbadobenonacdc.prop29 = "D=v12";
+                s_adbadobenonacdc.eVar181 = digitalData.user.corpName;
+                s_adbadobenonacdc.eVar182 = digitalData.user.corpId;
+                s_adbadobenonacdc.eVar183 = digitalData.user.accountType;
+                if (digitalData.user.attributes) {
+                    prod_array.push(somg.omega_merchandize_products(digitalData.user.attributes, "evar25", "evar26"));
+                }
+                somg.omega_setC(somg.omega_cRec(digitalData.user, "user"));
+            }
+
+            s_adbadobenonacdc.t();
+        }
+    }
+}
+
+});

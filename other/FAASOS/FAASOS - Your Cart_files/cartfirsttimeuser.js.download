@@ -1,0 +1,90 @@
+$(document).ready(function () {
+  $(document).on('change', '.deliveryAddress:not(.disabledAddress) input[type="radio"]', function () {
+    if ($(this).is(':checked'))
+    {
+      //$('#checkout_to_deliver').prop('disabled', false);
+      $('.checkoutToDeliverBtn').prop('disabled', false);
+      $('.deliveryAddress').removeClass('selectedAddress');
+      $(this).parent().parent().parent().addClass('selectedAddress');
+      $('.pickAddress').parent().parent().parent().addClass('placeOrderContainer');
+      $(".pickAddress").addClass("hide");
+    }
+    else if (!($(this).is(':checked'))) {
+      $(this).parent().parent().parent().removeClass('selectedAddress');
+      $(this).parents().find(".pickAddress").removeClass("hide");
+    }
+  });
+
+
+if($('.someSweetNothingsSlider').length) { 
+          function getGridSize() {
+            return (window.innerWidth < 800) ? 1 :
+                   (window.innerWidth < 1200) ? 2 : 3;
+          }
+          $('.someSweetNothingsSlider').flexslider({
+            animation: "slide",
+            animationLoop: false,
+            itemWidth: 210,
+            itemMargin: 15,
+            controlNav: false, 
+            directionNav: true,
+            animationLoop: true,
+            slideshow: false,
+            animationDuration: 600,
+            move: 1,
+            smoothHeight: false,
+            //minItems: getGridSize(), // use function to pull in initial value
+            maxItems: getGridSize(), // use function to pull in initial value     
+            start: function(slider) {
+              flexslider = slider; //Initializing flexslider here.
+              slider.removeClass('loadingSomeSweetNothings');
+            },    
+          });
+        $(window).resize(function() {
+            var gridSize = getGridSize();
+         
+            flexslider.vars.minItems = gridSize;
+            flexslider.vars.maxItems = gridSize;
+        }); 
+}
+
+   $('.cartUpdate').hide();
+
+
+  //var total_amount = 0;
+  //var updated_total_products;//total number of products for mobile view
+  var price_of_product;
+  //var product_id;
+//----------------------------If Quantity Of Selected Product Increases-----------------------------
+  $(document).on('click', '.someSweetNothingsSlider .addItem.itemCounter', function () {
+
+    price_of_product = $(this).parent().find("input[type='number']").attr('data-price');
+    var count_of_products = parseInt($(this).parent().find("input[type='number']").val()) + 1;
+    $(this).parent().find("input[type='number']").val(count_of_products);//updating count on click
+    $('.cartUpdate[data-product_id="'+$(this).parent().find("input[type='number']").attr('data-product_id')+'"]').show().find('.overlay').val(parseInt($(this).parent().find("input[type='number']").val()));
+    //product_id = $(this).parent().find("input[type='number']").attr('data-product_id');
+  })
+//-------------------------------------------------------------------------------------
+
+
+//--------------------------If Quantity Of Selected Product  Removed-------------------------
+  $(document).on('click', '.someSweetNothingsSlider .removeItem.itemCounter', function () {
+    if (parseInt($(this).parent().find("input[type='number']").val()) > 0) {
+      var total_products = $(this).parent().find("input[type='number']").val();
+      $(this).parent().find("input[type='number']").val(parseInt(total_products) - 1);
+      $('.cartUpdate[data-product_id="'+$(this).parent().find("input[type='number']").attr('data-product_id')+'"]').show().find('.overlay').val(parseInt($(this).parent().find("input[type='number']").val()));
+    }
+(parseInt($(this).parent().find("input[type='number']").val()) ==0)?$('.cartUpdate[data-product_id="'+$(this).parent().find("input[type='number']").attr('data-product_id')+'"]').hide():'';
+  });  
+//-------------------------Redraw grid on opening modal-------------------------------------
+  // // Add class to body on modal reveal
+  // $(document).on('open.fndtn.reveal', '[data-reveal]', function () {
+  //     $('.grid').masonry({
+  //       itemSelector: '.gridItem',
+  //       columnWidth: '.gridSizer',
+  //       gutter: '.gutterSizer',
+  //       percentPosition: true
+  //     });
+  // });
+
+});  

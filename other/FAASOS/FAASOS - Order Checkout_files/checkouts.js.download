@@ -1,0 +1,942 @@
+$(document).ready(function () {
+  //$('#paymentFailureModal').foundation('reveal', 'open');
+
+  $('[name="av"]').click(function(){
+    $("#coupon_value").val($(this).val())
+    on_coupon_apply($(this).val());
+    $(this).attr('checked',false);
+  })
+
+  if(localStorage.getItem("gtm_source") === 'phonepe_affiliate'){
+    $('.paymentModeContainer').hide() 
+    $(".pickPayment").html('<div class="billedAmountBox" style="padding:0;"><span class="containerLabel">YOU PAY</span><span class="amountPayable"><span class="faasos-inr"></span><span id="total_amount_footer" class="total_amount_footer"></span></span></div>')
+    $($(".billedAmountBox")[0]).hide();
+    $($(".billedAmountBox")[2]).hide();
+    $(".placeOrderBtn").removeClass("disabled")
+    $(".couponSection .creditsContainer").hide()
+    $(".avaialable_coupons").show()
+    $(".couponDisclaimer").hide()
+  }
+  else{
+    getPaymentModes();
+  }
+  $('#paymentOptionAccordion').on('toggled', function (event, accordion) {
+    $('.pickPayment').parent().parent().parent().addClass('placeOrderContainer');
+    $('.pickPayment').addClass('hide');
+  });
+
+      //Disable special characters
+      function IsAlphaNumeric(e, type) {
+          var specialKeys = new Array();
+          specialKeys.push(8); //Backspace
+          specialKeys.push(9); //Tab
+          specialKeys.push(46); //Delete
+          specialKeys.push(36); //Home
+          specialKeys.push(35); //End
+          specialKeys.push(37); //Left
+          specialKeys.push(39); //Right
+          //specialKeys.push(32); //Space
+          var keyCode = e.keyCode == 0 ? e.charCode : e.keyCode;
+          var ret = false;
+          if ((type == 'TextAndNumber')) {
+              ret = ((keyCode >= 48 && keyCode <= 57) || (keyCode >= 65 && keyCode <= 90) || (keyCode >= 97 && keyCode <= 122) || (specialKeys.indexOf(e.keyCode) != -1 && e.charCode != e.keyCode) || (keyCode == 32) || (keyCode == 44) || (keyCode == 45));
+          }
+          if ((type == 'Text')) {
+              ret = ((keyCode >= 65 && keyCode <= 90) || (keyCode >= 97 && keyCode <= 122) || (specialKeys.indexOf(e.keyCode) != -1 && e.charCode != e.keyCode) || (keyCode == 32) || (keyCode == 44) || (keyCode == 45));
+          }
+          if ((type == 'Number')) {
+              ret = ((keyCode >= 48 && keyCode <= 57) || (specialKeys.indexOf(e.keyCode) != -1 && e.charCode != e.keyCode));
+          }
+          if ((type == 'Date')) {
+              ret = ((keyCode == 47) || (keyCode >= 48 && keyCode <= 57) || (specialKeys.indexOf(e.keyCode) != -1 && e.charCode != e.keyCode) || (keyCode == 32) || (keyCode == 44) || (keyCode == 45));
+          }
+          return ret;
+      }
+      $("#citrusCardHolder").on('keypress', function(e) {
+          var ret = IsAlphaNumeric(e, 'Text');
+          return ret;
+      });
+      $("#citrusNumber").on('keypress', function(e) {
+          var ret = IsAlphaNumeric(e, 'Number');
+          return ret;
+      });
+      $("#citrusExpiry").on('keypress', function(e) {
+          var ret = IsAlphaNumeric(e, 'Date');
+          return ret;
+      });
+      $("#citrusCvv").on('keypress', function(e) {
+          var ret = IsAlphaNumeric(e, 'Number');
+          return ret;
+      });
+      //Disable paste on input fileds
+      $('#paymentOptionAccordion input').on("paste", function(e) {
+          e.preventDefault();
+      });
+      var check_client_source = parseInt(local_data.check_client_source);
+      if (cleverTapEvents.addTest()) {
+          var cleverObj = localStorage.getItem('cleverObj');
+          cleverObj = JSON.parse(cleverObj);
+      }
+      $('.headerCart').remove(); //to remove cart from this page
+      $('.welcomeUser').remove(); //to remove login button
+      var store_id = parseInt(local_data.customer_details.store_id);
+      var customer_id = parseInt(local_data.customer_details.customer_id);
+      var location_id = parseInt(local_data.customer_details.location_id);
+      var wallet_amount = parseFloat(local_data.wallet_amount);
+      var delivery_locality_id = parseInt(local_data.delivery_locality_id);
+      var discount = 0;
+      var faasos_credit_used = 0;
+      var total_amount = 0;
+      var delivery_fees = 0;
+      var collection_array = local_data.selected_products;
+
+      // var estimated_prepration_time=0;
+      var payment_fail_status = window.location.href.split('?')[1]
+      var applied_coupon_code = null;
+      // voucher redeemption [props intialize]
+      var applied_voucher_code = null;
+      var selected_voucher_client = '';
+      if (local_data.customer_details.applied_coupon_code && payment_fail_status != null) {
+          applied_coupon_code = local_data.customer_details.applied_coupon_code;
+          $("#coupon_value").val(applied_coupon_code);
+      }
+      if (local_data.customer_details.faasos_credit_used) {
+          faasos_credit_used = parseInt(local_data.customer_details.faasos_credit_used);
+          if (faasos_credit_used == 1) {
+              $('#useFaasosCredit').prop('checked', true);
+
+              $('#coupon_value').attr("disabled", true);
+              $("#apply_coupon").addClass("disabled");
+
+              //$('.couponSection').fadeOut( "fast");
+          }
+      }
+      allopertions(collection_array);
+      on_coupon_apply(applied_coupon_code);
+      $("#apply_coupon").click(function() {
+        if ($('#coupon_value').val() !== "") {
+          if ($(this).attr('class') == "redLink") {
+            cleverTapEvents.couponRemoved($("#coupon_value").val());
+            on_coupon_apply(null);
+            $("#coupon_value").val(null);
+            $(this).text("Apply").removeClass().addClass("purple btn").parent().removeClass('removeCoupon');
+            $("#coupon_value").removeClass('removeCouponInput');
+            $('#sucess_icon').empty();
+  
+            //$(".paymentModCredit").show();
+  
+            $('#useFaasosCredit').attr("disabled",false);
+  
+            applied_coupon_tnc = null;
+  
+            if(applied_coupon_tnc == null) {
+              $('#couponInfo').find('#couponTerms').empty();
+              $('#couponInfo').addClass('hide');
+            }          
+  
+          } else {         
+            on_coupon_apply($("#coupon_value").val());
+          }
+        } else {
+          alert('Please Enter Coupon Code');
+        }
+      })
+      $('#useFaasosCredit').change(function() {
+        if (document.getElementById('useFaasosCredit').checked) {
+          faasos_credit_used = 1;
+  
+          $('#coupon_value').attr("disabled",true);
+          $("#apply_coupon").addClass("disabled");
+  
+          if ($("#coupon_value").val()) { 
+            on_coupon_apply($("#coupon_value").val());
+          } else {
+            on_coupon_apply(null);
+          }
+          update_faasos_credit_used_status(faasos_credit_used);
+          //$('.couponSection').fadeOut( "fast");
+        } else {
+          $('#coupon_value').attr("disabled",false);
+          $("#apply_coupon").removeClass("disabled");
+          faasos_credit_used = 0;
+          allopertions(collection_array);
+          sub_total(total_amount, 0, 0);
+          update_faasos_credit_used_status(faasos_credit_used);
+          $("#credit").text(0);
+          $('#faasos_wallet').text(wallet_amount);
+          $(".errorMessage").html('');
+          //$('.couponSection').show();
+        }
+  
+      })
+      var applied_coupon_tnc = null;
+      if (applied_coupon_tnc == null) {
+          $('#couponInfo').find('#couponTerms').empty();
+          $('#couponInfo').addClass('hide');
+      }
+
+      function on_coupon_apply(coupon) {
+        var coupon_code = coupon;
+        if (coupon != null) $('#sucess_icon').empty().html("<div class='couponMessage'>Applying Coupon " + coupon_code + "</div>");
+        let final_data = construct_order_info(); 
+        final_data.coupon_code = coupon;
+        final_data.voucher_code = applied_voucher_code;
+        final_data.voucher_client = selected_voucher_client;
+        validate_coupon(final_data, function (err, data) {
+          if (data.response_code == 300) {
+              // if(applied_voucher_code && (faasos_credit_used || applied_coupon_code)){
+              //   coupon_success(data,coupon_code);
+               
+              // }else{
+                coupon_success(data,coupon_code);
+              // }
+          } else {
+            if (coupon_code && cleverTapEvents.addTest()) {
+              cleverTapEvents.couponApplied(coupon_code, "FALSE");
+            }
+            applied_coupon_code = null;
+            if(faasos_credit_used){
+              faasos_credit_used = 0;
+              update_faasos_credit_used_status(faasos_credit_used);
+              enableCoupon();
+              disableCredits();
+            }
+            if(check_client_source == 6) {
+              $('#sucess_icon').empty().html("<div class='errorMessage text-left'>" + data.message + "</div>");
+            }
+            else {
+              $('#sucess_icon').empty().html("<div class='errorMessage text-center'>" + data.message + "</div>");
+            }
+            $('#coupon_value').val('');
+          }
+          applied_coupon_tnc=data.terms_and_conditions;
+            if(applied_coupon_tnc != null) {
+              $('#couponInfo').removeClass('hide').find('#couponTerms').append(applied_coupon_tnc);
+            }        
+        })
+      }
+
+      function validate_coupon(selected_products, callback) {
+        $.ajax({
+          url: local_data.api_url + 'coupon/validate.json',
+          crossDomain: true,
+          type: 'POST',
+          contentType: "application/json; charset=utf-8",
+          headers: {
+            'Client-Source': check_client_source,
+            'Client-Os': 'WebApp',
+            'darthvader': local_data.access_token,
+            'brand-id': 4
+          },
+          data: JSON.stringify(selected_products),
+          success: function (result, status) {
+            if(result.response_code==300){
+            cashback_amount = result.cashback_amount;
+            $("#cashback_amount").text(cashback_amount);
+            /*if(cashback_amount>0) {
+              $(".couponDisclaimer").css('display','inline-block');
+            }else {
+              $(".couponDisclaimer").css('display','none');
+            }*/
+            delivery_fees = result.delivery_fees;
+            discount = result.coupon_discount_amount;
+            $("#discount").text(discount);
+            $("#credit").text(result.total_faasos_credit_discount_amount);
+            if (result.total_faasos_credit_discount_amount) {
+              $('#faasos_wallet').text(wallet_amount - result.total_faasos_credit_discount_amount);
+            } else {
+              $('#faasos_wallet').text(wallet_amount);
+            }
+            $('#delivery_fee').text(delivery_fees);
+            if (result.cart_amount) {
+              sub_total(result.cart_amount, discount, result.total_faasos_credit_discount_amount)
+            }
+            callback(null, result)
+          }else{
+            callback(null, result)
+          }
+  
+          },
+          error: function (request, status, error) {
+            if(request.status === 401){
+              window.location.href="/logout";
+            }
+          }
+        })
+      }
+
+      function checkout_cart(selected_products_array, callback) {
+          total_amount = 0;
+          $("#selected_products_list").empty();
+          var country = JSON.parse(localStorage.getItem("country"));
+          selected_products_array.forEach(function(items) {
+              items.currency_symbol = country.currency_symbol;
+              if (items.order_count > 0) {
+                  var temp = 0;
+                  if (items.selected_customization != null) {
+                      items.selected_customization.forEach(function(items) {
+                          temp = temp + parseFloat(items.price);
+                      })
+                  }
+                  var selected_products = _.template($('#selected_products').html());
+                  items.price_with_customization = parseFloat((parseFloat(items.price) * parseInt(items.order_count) + temp).toFixed(2));
+                  //items.price_with_customization = parseFloat(items.price) * parseInt(items.order_count) + temp;
+                  $("#selected_products_list").append(selected_products(items));
+                  total_amount = total_amount + parseInt(items.order_count) * parseFloat(items.price) + temp;
+              }
+          })
+          sub_total(total_amount, 0, 0)
+          $('#total_amount').html(total_amount.toFixed(2));
+      }
+
+      function calculate_taxes(selected_products_array, callback) {
+        $.ajax({
+          url: local_data.api_url + "tax/tax_calculator.json",
+          crossDomain: true,
+          type: 'POST',
+          headers: {
+            'Client-Source': check_client_source,
+            'brand-id': 4
+          },
+          contentType: "application/json; charset=utf-8",
+          data: JSON.stringify(selected_products_array),
+          success: function (result) {
+            //tax calculation starts here
+            var is_back_tax_calculated = 0;
+            var tax_amount = 0;
+            for (var property in result.taxes) {
+              tax_amount = tax_amount + result.taxes[property];
+            }
+            if(check_client_source == 6){
+              tax_amount = 0 ;
+            }
+            var total_payable_amount = 0;
+            result.products.forEach(function (items) {
+              total_payable_amount += parseFloat(items.gross_amount_with_customization);
+              if (items.is_back_calculate_tax == 1) {
+                is_back_tax_calculated += items.tax_amount;
+              }
+            })
+            total_payable_amount += parseFloat(delivery_fees);
+            $('#tax').text((tax_amount - is_back_tax_calculated).toFixed(2)); //subtracting those taxes which should not calculated
+            $('#total_payable_amount').text(Math.round((total_payable_amount)));
+            //$("#total_amount_footer").text($("#total_payable_amount").text());
+            $(".total_amount_footer").text($("#total_payable_amount").text());     
+            if(total_payable_amount === 0){
+              disableVoucher();
+            }else {
+              enableVoucher();
+            }    
+            if(faasos_credit_used){
+              disableCoupon();
+              enableCredits();
+            } else {
+              enableCoupon();
+              disableCredits();
+            }
+            update_total_amount(Math.round(total_payable_amount));
+           
+            if(cleverObj && applied_coupon_code == null && cleverTapEvents.addTest()){
+              cleverObj.PurchaseAmountEvent.getBeforeDiscountTotalOrderAmount =   total_payable_amount ;
+              cleverObj.PurchaseAmountEvent.getBeforeDiscountBeforeTaxOrderAmount = total_payable_amount - tax_amount ;
+              cleverObj.PurchaseAmountEvent.getBeforeDiscountTaxAmount = tax_amount;
+             } 
+          },
+          error: function (request, status, error) {
+            if(request.status === 401){
+              window.location.href="/logout";
+            }
+            if(total_payable_amount === 0){
+              disableVoucher();
+            }else {
+              enableVoucher();
+            }   
+          }
+        })
+      }
+      
+      function allopertions(collection_array) {
+        var final_data = {}
+        var product_array = [];
+        collection_array.forEach(function (items) {
+          for (var i = 1; i <= items.order_count; i++) {
+            var temp = {};
+            var customization = [];
+            if (items.selected_customization != null) {
+              items.selected_customization.forEach(function (items) {
+                var temp = {}
+                if (items.counter_no == i) {
+                  temp.price = parseFloat(items.price);
+                  temp.net_amount = parseFloat(items.price);
+                  temp.customization_product_id = parseInt(items.product_id);
+                  customization.push(temp);
+                }
+              })
+            }
+            temp.customization = customization;
+            temp.price = parseFloat(items.price);
+            temp.product_id = parseInt(items.product_id);
+            temp.net_amount = parseFloat(items.price);
+            product_array.push(temp)
+          }
+        })
+        final_data.product = product_array;
+        final_data.store_id = store_id;
+        if(applied_voucher_code && !faasos_credit_used){
+          apply_voucher_code(applied_voucher_code);
+        }else{
+          calculate_taxes(final_data);
+        }
+        checkout_cart(collection_array);
+      }
+      function update_total_amount(total_amount) {
+        // alert(applied_coupon_code);
+        $.ajax({
+          url: "/update_total_amount",
+          crossDomain: false,
+          type: 'POST',
+          // contentType: "application/json; charset=utf-8",              
+          data: {
+            total_amount: total_amount,
+            applied_coupon_code: applied_coupon_code,
+            // voucher redeemption [props updation in backend]
+            voucher_code : applied_voucher_code,
+            voucher_client: selected_voucher_client
+          },
+          success: function (result) {
+            window.Simpl.setTransactionAmount(parseInt(total_amount) * 100);
+          },
+          error: function (request, status, error) {
+            if(request.status === 401){
+              window.location.href="/logout";
+            }
+          }
+        })
+      }
+
+  $(".red.btn.payment").click(function(){
+    var cartAmount =  $('#total_amount').html()
+    var discountAmount =  $('#discount').html()
+    var creditAmount =  $('#credit').html()
+    var subTotal =  $('#sub_total').html()
+    var delivery_fees =  $('#delivery_fees').html()
+    var taxAmount  = $('#tax').html()
+    var payAmount = $('#total_payable_amount').html()
+    var date = new Date(); 
+    var days = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+    if (cleverObj && cleverTapEvents.addTest()) {
+
+    cleverObj.chargeDetails.getPaidAmount = payAmount;
+    cleverObj.chargeDetails.getOrderDate = date.getTime();
+    cleverObj.chargeDetails.getTargetDate = days[date.getDay()];
+    cleverObj.PurchaseAmountEvent.getDiscountAmount = discountAmount;
+    cleverObj.PurchaseAmountEvent.getPaidTaxAmount =  taxAmount ;
+    cleverObj.PurchaseAmountEvent.getPaidAmount =  payAmount ;
+    cleverObj.PurchaseAmountEvent.getPaidOrderAmountWithoutTax = payAmount - taxAmount ;
+    cleverObj.PurchaseAmountEvent.getPaymentMode = null
+    cleverObj.PurchaseAmountEvent.getCreditAmount = creditAmount ; 
+    cleverObj.purchaseCouponEvent.discount =  discountAmount ;
+    cleverObj.purchaseCouponEvent.order =  payAmount ;
+
+    localStorage.setItem('cleverObj', JSON.stringify(cleverObj));
+    }
+
+  })
+  $('#paymentOptionAccordion').on('toggled', function (event, accordion) {
+    $('.placeOrderBtn').removeClass('disabled');
+  });
+  
+  $(window).on('load resize',function(){
+    var realFooter = $('.nonStickyRow');
+    var floatingFooter = $('.stickyRow');
+    var scrollTop = $(window).scrollTop();
+    var winHeight = $(window).height();
+    var footerOffsetTop = realFooter.offset().top;
+    if ((scrollTop+winHeight) > footerOffsetTop) {
+        floatingFooter.hide();
+        $(".container").removeClass('stickyRowContainer');
+    } else {
+        floatingFooter.fadeIn('fast');
+        $(".container").addClass('stickyRowContainer'); 
+    }
+
+    $(document).scroll(function () {
+        scrollTop = $(window).scrollTop();
+        winHeight = $(window).height();
+        footerOffsetTop = realFooter.offset().top;
+        if ((scrollTop+winHeight) > footerOffsetTop) {
+            floatingFooter.hide();
+            $(".container").removeClass('stickyRowContainer');
+        } else {
+            floatingFooter.fadeIn('fast');
+            $(".container").addClass('stickyRowContainer');              
+        }
+    });
+  });
+  
+  if(local_data.coupon !==""){
+    $("#coupon_value").val(local_data.coupon);
+    $("#apply_coupon").trigger('click');
+  }
+
+//     function getPaymentModes(){
+//       var store_id = parseInt(local_data.customer_details.store_id);
+//       var brand_id = 4;
+
+//       $.ajax({
+//         url: local_data.api_url + 'brands/get_brand_wise_payment_types/brand_id/'+ brand_id +'/store_id/' + store_id + '.json',
+//         crossDomain: true,
+//         type: 'GET',
+//         headers: {
+//           'Client-Os': 'WebApp'
+//         },
+//         success: function (result, status) {
+//           result.forEach(function (item) {
+//             if(item.payment_name == 'cod') {
+//               if(item.offer_description && item.offer_description!=''){
+//                 $('#codPaymentOffer').append(item.offer_description);
+//                 $('#codAccordion').removeClass('hideAccordionPanel');
+//               }
+//             }
+//             else if(item.payment_name == 'Simpl') {
+//               if(item.offer_description && item.offer_description!=''){
+//                 $('#paylaterPaymentOffer').append(item.offer_description);
+//                 $('#payLaterAccordion').removeClass('hideAccordionPanel');
+//               }
+//             }
+//             else if(item.payment_name == 'amazon_pay') {
+//               if(item.offer_description && item.offer_description!=''){
+//                 $('#amazonPaymentOffer').append(item.offer_description);
+//               }
+//             }
+//             else if(item.payment_name == 'online_credit_card') {
+//               if(item.offer_description && item.offer_description!=''){
+//                 if($('#citrusCardType').val()=='credit') {
+//                   $('#cardPaymentOffer').append(item.offer_description);
+//                 }
+//             }
+//         }
+//     })
+// }
+//       })
+//     }
+      function sub_total(cart_amount, discount, credits) {
+          var sub_total = parseFloat(cart_amount) - parseFloat(discount) - parseFloat(credits);
+          sub_total = parseFloat(sub_total.toFixed(2));
+          $("#sub_total").text(sub_total);
+          // return ();
+      }
+
+      function update_faasos_credit_used_status(faasos_credit_status) {
+          $.ajax({
+              url: "/faasos_credit_status",
+              crossDomain: false,
+              type: 'POST',
+              // contentType: "application/json; charset=utf-8",              
+              data: {
+                  faasos_credit_used: parseInt(faasos_credit_status)
+              },
+              success: function(result) {},
+              error: function(request, status, error) {
+                  if (request.status === 401) {
+                      window.location.href = "/logout";
+                  }
+              }
+          })
+      }
+
+      $(".red.btn.payment").click(function() {
+          var cartAmount = $('#total_amount').html()
+          var discountAmount = $('#discount').html()
+          var creditAmount = $('#credit').html()
+          var subTotal = $('#sub_total').html()
+          var delivery_fees = $('#delivery_fees').html()
+          var taxAmount = $('#tax').html()
+          var payAmount = $('#total_payable_amount').html()
+          var date = new Date();
+          var days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+          if (cleverObj && cleverTapEvents.addTest()) {
+
+              cleverObj.chargeDetails.getPaidAmount = payAmount;
+              cleverObj.chargeDetails.getOrderDate = date.getTime();
+              cleverObj.chargeDetails.getTargetDate = days[date.getDay()];
+              cleverObj.PurchaseAmountEvent.getDiscountAmount = discountAmount;
+              cleverObj.PurchaseAmountEvent.getPaidTaxAmount = taxAmount;
+              cleverObj.PurchaseAmountEvent.getPaidAmount = payAmount;
+              cleverObj.PurchaseAmountEvent.getPaidOrderAmountWithoutTax = payAmount - taxAmount;
+              cleverObj.PurchaseAmountEvent.getPaymentMode = null
+              cleverObj.PurchaseAmountEvent.getCreditAmount = creditAmount;
+              cleverObj.purchaseCouponEvent.discount = discountAmount;
+              cleverObj.purchaseCouponEvent.order = payAmount;
+
+              localStorage.setItem('cleverObj', JSON.stringify(cleverObj));
+          }
+
+      })
+      $('#paymentOptionAccordion').on('toggled', function(event, accordion) {
+          $('.placeOrderBtn').removeClass('disabled');
+      });
+
+      $(window).on('load resize', function() {
+          var realFooter = $('.nonStickyRow');
+          var floatingFooter = $('.stickyRow');
+          var scrollTop = $(window).scrollTop();
+          var winHeight = $(window).height();
+          var footerOffsetTop = realFooter.offset().top;
+          if ((scrollTop + winHeight) > footerOffsetTop) {
+              floatingFooter.hide();
+              $(".container").removeClass('stickyRowContainer');
+          } else {
+              floatingFooter.fadeIn('fast');
+              $(".container").addClass('stickyRowContainer');
+          }
+
+          $(document).scroll(function() {
+              scrollTop = $(window).scrollTop();
+              winHeight = $(window).height();
+              footerOffsetTop = realFooter.offset().top;
+              if ((scrollTop + winHeight) > footerOffsetTop) {
+                  floatingFooter.hide();
+                  $(".container").removeClass('stickyRowContainer');
+              } else {
+                  floatingFooter.fadeIn('fast');
+                  $(".container").addClass('stickyRowContainer');
+              }
+          });
+      });
+
+      if (local_data.coupon !== "") {
+          $("#coupon_value").val(local_data.coupon);
+          $("#apply_coupon").trigger('click');
+      }
+
+      function getPaymentModes() {
+          var store_id = parseInt(local_data.customer_details.store_id);
+          var brand_id = 4;
+
+          $.ajax({
+              url: local_data.api_url + 'brands/get_brand_wise_payment_types/brand_id/' + brand_id + '/store_id/' + store_id + '.json',
+              crossDomain: true,
+              type: 'GET',
+              headers: {
+                  'Client-Os': 'WebApp'
+              },
+              success: function(result, status) {
+                  result.forEach(function(item) {
+                      if (item.payment_name == 'cod') {
+                          if (item.offer_description && item.offer_description != '') {
+                              $('#codPaymentOffer').append(item.offer_description);
+                              $('#codAccordion').removeClass('hideAccordionPanel');
+                          }
+                      } else if (item.payment_name == 'Simpl') {
+                          if (item.offer_description && item.offer_description != '') {
+                              $('#paylaterPaymentOffer').append(item.offer_description);
+                              $('#payLaterAccordion').removeClass('hideAccordionPanel');
+                          }
+                      } else if (item.payment_name == 'amazon_pay') {
+                          if (item.offer_description && item.offer_description != '') {
+                              $('#amazonPaymentOffer').append(item.offer_description);
+                          }
+                      } else if (item.payment_name == 'online_credit_card') {
+                          if (item.offer_description && item.offer_description != '') {
+                              if ($('#citrusCardType').val() == 'credit') {
+                                  $('#cardPaymentOffer').append(item.offer_description);
+                              }
+                          }
+                      } else if (item.payment_name == 'online_debit_card') {
+                          if (item.offer_description && item.offer_description != '') {
+                              if ($('#citrusCardType').val() == 'debit') {
+                                  $('#cardPaymentOffer').append(item.offer_description);
+                              }
+                          }
+                      } else if (item.payment_name == 'paytm') {
+                          if (item.offer_description && item.offer_description != '') {
+                              $('#paytmPaymentOffer').append(item.offer_description);
+                          }
+                      } else if (item.payment_name == 'mobikwik') {
+                          if (item.offer_description && item.offer_description != '') {
+                              $('#mobikwikPaymentOffer').append(item.offer_description);
+                          }
+                      } else if (item.payment_name == 'freecharge') {
+                          if (item.offer_description && item.offer_description != '') {
+                              $('#freechargePaymentOffer').append(item.offer_description);
+                          }
+                      } else if (item.payment_name == 'phonepe') {
+                          if (item.offer_description && item.offer_description != '') {
+                              $('#phonepePaymentOffer').append(item.offer_description);
+                          }
+                      } else if (item.payment_name == 'Netbanking') {
+                          if (item.offer_description && item.offer_description != '') {
+                              $('#netbankingPaymentOffer').append(item.offer_description);
+                          }
+                      } else if ((item.payment_name).toLowerCase() == 'paypal') {
+                          if (item.offer_description && item.offer_description != '') {
+                              $('#paypalPaymentOffer').append(item.offer_description);
+                          }
+                      } else if((item.payment_name).toLowerCase() == 'gpay') {
+                          if(item.offer_description && item.offer_description!=''){
+                            $('#gpayPaymentOffer').append(item.offer_description);
+                          }
+                        }
+                        else if((item.payment_name).toLowerCase() == 'sodexo') {                           
+                          if(item.offer_description && item.offer_description!=''){                
+                            $('#sodexoOffer').append(item.offer_description);
+                          }
+                        }
+                      
+                  });
+
+              },
+              error: function(request, status, error) {
+                  //alert("Error : "+error.message);
+              }
+          })
+      }
+
+    function coupon_success(data,coupon_code){
+      var coupon = coupon_code;
+      var final_data = {};
+      var product_array = [];
+      applied_coupon_code = coupon_code;
+      data.product.forEach(function (items, i) {
+        var temp = {};
+        // if (items.customization.length > 0) {
+        //   items.customization.forEach(function (item) {
+        //     item.net_amount = parseFloat(item.price); //adding a extra value in customization
+        //   });
+        // }
+        // console.log("==========",items)
+        temp.customization = items.customization;
+        temp.price = parseFloat(items.net_amount);
+        temp.product_id = parseInt(items.product_id);
+        temp.net_amount = parseFloat(items.net_amount);
+        product_array.push(temp)
+      })
+      final_data.product = product_array;
+      final_data.store_id = store_id;
+      if(applied_voucher_code && (applied_coupon_code || faasos_credit_used)){
+        remove_voucher();
+      } 
+      else if(applied_voucher_code){
+        apply_voucher_code(applied_voucher_code);
+      }
+      else{
+        calculate_taxes(final_data);
+      }
+      if (coupon != null) {
+        /*$('#sucess_icon').empty().html("<span class='faasos-coupon-applied success'></span><div class='couponMessage'>Coupon Applied</div>")*/
+        $('#sucess_icon').empty().html("<span class='faasos-coupon-applied success'></span><div class='couponMessage'>Coupon Applied</div>")
+        //$("#apply_coupon").text("Remove Coupon").removeClass().addClass("redLink");
+        $("#apply_coupon").html("<span class='faasos-closesimple'></span>").removeClass().addClass("redLink").parent().addClass('removeCoupon');
+        $("#coupon_value").addClass('removeCouponInput');
+        $("#useFaasosCredit").attr("disabled",true);
+        //$(".paymentModCredit").fadeOut( "fast");
+      }
+      if (cleverObj && cleverTapEvents.addTest()){
+
+        cleverObj.purchaseCouponEvent.coupon = applied_coupon_code ;
+        if (applied_coupon_code) {
+          cleverTapEvents.couponApplied(applied_coupon_code, "TRUE");
+          cleverObj.chargeDetails.getCouponCode = applied_coupon_code;
+        }
+      }
+    }
+
+    function disableVoucher() {
+      $('#voucher_code').attr('disabled',true);
+      $('#apply_voucher').removeClass('active').addClass('not-active');
+    }
+    function enableVoucher() {
+      $('#voucher_code').attr('disabled',false);
+      $('#apply_voucher').removeClass('not-active').addClass('active');
+    }
+    function disableCoupon(){
+      $('#coupon_value').attr("disabled",true);
+      $("#apply_coupon").addClass("disabled");
+    }
+    function enableCoupon(){
+      $('#coupon_value').attr("disabled",false);
+      $("#apply_coupon").removeClass("disabled");
+    }
+    function enableCredits(){
+      document.getElementById('useFaasosCredit').checked = true;
+    }
+    function disableCredits(){
+      document.getElementById('useFaasosCredit').checked = false;
+    }
+    function apply_voucher_code(code){
+
+
+      let final_data = construct_order_info();
+      final_data['voucher_code'] = code;
+      final_data['voucher_client'] = 'edenred';
+      final_data['coupon_code'] = applied_coupon_code || null;
+      $('#voucher_sucess_icon').empty().html("<div class='errorMessage text-left'>Applying voucher " + code + "</div>");
+      $('#apply_voucher').removeClass('active').addClass('not-active');
+      validate_voucher(final_data,(err,result)=>{
+          if(err){
+            $('#apply_voucher').removeClass('not-active').addClass('active');
+
+            if(check_client_source == 6) {
+              $('#voucher_sucess_icon').empty().html("<div class='errorMessage text-left'>" + err.message + "</div>");
+            }
+            else {
+              $('#voucher_sucess_icon').empty().html("<div class='errorMessage text-left'>" + err.message + "</div>");
+            }
+            $('#voucher_code').val('');
+            $('#voucher_code').attr('disabled',false);
+
+          }else{
+            $('#apply_voucher').removeClass('not-active').addClass('active');
+            $('#voucher_code').attr('disabled',true);
+
+            selected_voucher_client = final_data['voucher_client'];
+            applied_voucher_code = final_data['voucher_code'];
+            var is_back_tax_calculated = 0;
+            var tax_amount = 0;
+            for (var property in result.taxes) {
+              tax_amount = tax_amount + result.taxes[property];
+            }
+            if(check_client_source == 6){
+              tax_amount = 0 ;
+            }
+            var total_payable_amount = 0;
+            result.products.forEach(function (items) {
+              total_payable_amount += parseFloat(items.gross_amount_with_customization);
+              if (items.is_back_calculate_tax == 1) {
+                is_back_tax_calculated += items.tax_amount;
+              }
+            })
+            total_payable_amount += parseFloat(delivery_fees);
+            let redeemable_amout = result.amount_to_redeem;
+            $('#voucherAmountContainer').removeClass('hide');
+            $('#voucher_amount').text((total_payable_amount > result.amount_to_redeem) ? (result.amount_to_redeem).toFixed(2): (total_payable_amount).toFixed(2));   
+
+            total_payable_amount = redeemable_amout > total_payable_amount ? 0 : (total_payable_amount-redeemable_amout);
+            $('#tax').text((tax_amount - is_back_tax_calculated).toFixed(2)); //subtracting those taxes which should not calculated
+            $('#total_payable_amount').text(Math.round((total_payable_amount)));
+            //$("#total_amount_footer").text($("#total_payable_amount").text());
+            $(".total_amount_footer").text($("#total_payable_amount").text());
+            total_payable_amount = Math.round(total_payable_amount);
+            update_total_amount(total_payable_amount);
+            if(total_payable_amount === 0){
+              $('.placeOrderBtn').removeClass('disabled');
+            }
+            $('#voucher_sucess_icon').empty();
+            // $('#voucher_sucess_icon').empty().html("<span class='faasos-coupon-applied success'></span><div class='couponMessage'>Voucher Applied</div>")
+            //$("#apply_coupon").text("Remove Coupon").removeClass().addClass("redLink");
+            $("#apply_voucher").html("<span>Remove</span>").removeClass().addClass("redLink voucherLink").parent().addClass('removeVoucher');
+            $("#voucher_code").addClass('removeCouponInput');
+            // $("#useFaasosCredit").attr("disabled",true);
+            // $("#coupon_value").attr("disabled",true);
+            cleverTapEvents.voucherApplied(applied_voucher_code, "TRUE");
+          }
+        
+      })
+    
+  }
+  $("#apply_voucher").click(function(){
+    let voucher_code = $('#voucher_code').val() ? $('#voucher_code').val().trim() : null;
+    if(voucher_code){
+      if ($(this).attr('class') == "redLink voucherLink") {
+        // cleverTapEvents.couponRemoved($("#coupon_value").val());
+        
+        remove_voucher();
+        // applied_coupon_tnc = null;
+      
+      } else {
+        apply_voucher_code(voucher_code);
+      }
+    }else{
+      alert('Please enter voucher code');
+    }
+  });
+  function remove_voucher(){
+      cleverTapEvents.voucherRemoved($("#voucher_code").val());
+      applied_voucher_code = null;
+      selected_voucher_client = '';
+      on_coupon_apply(applied_coupon_code || null);
+      $("#voucher_code").val(null);
+      $("#apply_voucher").text("Apply").removeClass().addClass("purple btn").parent().removeClass('removeVoucher');
+      $('#voucherAmountContainer').addClass('hide');
+      $('#voucher_amount').text((0).toFixed(2));   
+
+      $("#voucher_code").removeClass('removeCouponInput');
+      $('#voucher_sucess_icon').empty();
+
+      //$(".paymentModCredit").show();
+      
+      $('#useFaasosCredit').attr("disabled",false);
+      $('#coupon_value').attr("disabled",false);
+  }
+  function validate_voucher(selected_products, callback) {
+    $.ajax({
+      url: local_data.api_url + 'voucher/validate.json',
+      crossDomain: true,
+      type: 'POST',
+      contentType: "application/json; charset=utf-8",
+      headers: {
+        'Client-Source': check_client_source,
+        'Client-Os': 'WebApp',
+        'darthvader': local_data.access_token,
+        'brand-id': 4
+      },
+      data: JSON.stringify(selected_products),
+      success: function (result, status) {
+        callback(null, result);
+      },
+      error: function (request, status, error) {
+        if(request.status === 401){
+          window.location.href="/logout";
+        }
+        if(request.status === 400 || request.status === 422){
+          callback(request.responseJSON,null);
+        }
+      }
+    })
+  }
+  function construct_order_info(){
+    discount = 0;
+    var final_data = {}
+    var combo = [];
+    var product = [];
+    var order_type = "delivery";
+    // var coupon_code = coupon;
+    var source = "website";
+    collection_array.forEach(function (items) {
+      for (var i = 1; i <= items.order_count; i++) {
+        var product_object = {}
+        product_object.product_id = parseInt(items.product_id);
+        product_object.price = parseFloat(items.price);
+        var customization = [];
+        if (items.selected_customization != null) {
+          items.selected_customization.forEach(function (items) {
+            var temp = {}
+            if (items.counter_no == i) {
+              temp.price = parseFloat(items.price);
+              temp.net_amount = parseFloat(items.price);
+              temp.customization_product_id = parseInt(items.product_id);
+              customization.push(temp);
+            }
+          })
+        }
+        product_object.customization = customization;
+        product.push(product_object);
+      }
+    })
+    final_data.combo = combo;
+    final_data.product = product;
+    final_data.store_id = store_id;
+    final_data.customer_id = customer_id;
+    final_data.location_id = location_id;
+    final_data.order_type = order_type;
+    final_data.source = source;
+    final_data.coupon_code = null; 
+    final_data.voucher_code = null;
+    final_data.faasos_credit_used = faasos_credit_used;
+    final_data.delivery_locality_id = delivery_locality_id;
+    return final_data;
+  }
+
+})
+   //document.ready ends here

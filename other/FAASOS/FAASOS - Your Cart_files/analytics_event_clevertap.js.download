@@ -1,0 +1,272 @@
+var AnalyticConst = analyticConst ;
+var cleverTapAPI = clevertap;
+if ('serviceWorker' in navigator) {
+ navigator.serviceWorker.register('/clevertap_sw.js').then(function(reg) {
+ }).catch(function(err) {
+   console.log(':^(', err);
+ });
+}
+var cleverTapEvents = {}
+cleverTapEvents.setProfile = function (user) {
+  var profileUpdate = {};
+  profileUpdate.Name = user.name ? user.name : AnalyticConst.NULL;
+  profileUpdate.Identity =  user.phone_number ? user.phone_number : AnalyticConst.NULL;
+  profileUpdate.Phone = user.phone_number ? user.phone_number : AnalyticConst.NULL;
+  profileUpdate.Email = user.mailing_address ? user.mailing_address : AnalyticConst.NULL;
+  profileUpdate.Gender = user.gender ? user.gender : AnalyticConst.NULL;
+  profileUpdate.DOB = user.date_of_birth ? user.date_of_birth : AnalyticConst.NULL;
+  profileUpdate[AnalyticConst.ORDER_COUNT] = user.order_count ? user.order_count : AnalyticConst.NULL;
+  profileUpdate[AnalyticConst.CREATED_DATE] = user.created_at ? user.created_at : AnalyticConst.NULL;
+  profileUpdate[AnalyticConst.LAST_ORDER_DATE] = user.last_order_date ? user.last_order_date : AnalyticConst.NULL;
+  profileUpdate[AnalyticConst.TOTAL_ORDER_AMOUNT] = user.total_order_amount ? user.total_order_amount : AnalyticConst.NULL;
+  profileUpdate[AnalyticConst.FAASOS_CREDIT] = user.wallet ? user.wallet : AnalyticConst.ZERO;
+  profileUpdate[AnalyticConst.REFERRAL] = user.referral ? user.referral : AnalyticConst.NULL;
+  profileUpdate[AnalyticConst.AVG_DISCOUNT_AMOUNT] =  AnalyticConst.ZERO;
+  profileUpdate[AnalyticConst.DEVICE_ID] = user.device_code ? user.device_code : AnalyticConst.NULL;
+  profileUpdate[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.profile.push(profileUpdate);
+}
+cleverTapEvents.setRegistrationStatus = function (registrationStatus) {
+  var profileUpdate = {};
+  profileUpdate[AnalyticConst.STATUS] = registrationStatus;
+  profileUpdate[AnalyticConst.CLIENT_SOURCE] = "website";  
+  cleverTapAPI.profile.push(profileUpdate);
+}
+cleverTapEvents.applicationOpen = function () {
+  var applicationOpenProfile = {}
+  applicationOpenProfile[AnalyticConst.DATE] = new Date; 
+  applicationOpenProfile[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.APPLICATION_OPEN, applicationOpenProfile);
+}
+cleverTapEvents.navigationClick = function (navigation) {
+  var applicationOpenEvent = {}
+  applicationOpenEvent[AnalyticConst.NAVIGATE_TO] = navigation;
+  applicationOpenEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+cleverTapAPI.event.push(AnalyticConst.NAVIGATION_SLIDER_CLICK, applicationOpenEvent);
+}
+/* --VIEW-- */
+cleverTapEvents.pageView = function (page) {
+  var pageViewEvent = {};
+  pageViewEvent[AnalyticConst.HOST] = page.pageName.toString();
+  pageViewEvent[AnalyticConst.ORIGIN] = page.origiName.toString();
+  pageViewEvent[AnalyticConst.HREF] = page.hrefString.toString();
+  pageViewEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.PAGE_VIEWED, pageViewEvent);
+}
+cleverTapEvents.productView = function (productName, collectionName, isPromotional, source) {
+  var productViewEvent = {};
+  productViewEvent[AnalyticConst.PRODUCT_NAME] = productName;
+  productViewEvent[AnalyticConst.COLLECTION_NAME] = collectionName;
+  productViewEvent[AnalyticConst.PROMOTIONAL] = isPromotional.toUpperCase();
+  productViewEvent[AnalyticConst.SOURCE] = source;
+  productViewEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.PRODUCT_VIEWED, productViewEvent);
+}
+cleverTapEvents.productAdded = function (productName, collectionName, isPromotional, source, back) {
+  var productAddedEvent = {};
+  productAddedEvent[AnalyticConst.PRODUCT_NAME] = productName;
+  productAddedEvent[AnalyticConst.COLLECTION_NAME] = collectionName;
+  productAddedEvent[AnalyticConst.PROMOTIONAL] = isPromotional.toUpperCase();
+  productAddedEvent[AnalyticConst.SOURCE] = source;
+  productAddedEvent[AnalyticConst.IS_BACK_CALCULATED] = back;
+  productAddedEvent[AnalyticConst.IS_COMBO] = "FALSE";
+  productAddedEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.PRODUCT_ADDED, productAddedEvent);
+}
+cleverTapEvents.productRemoved = function (productName, collectionName, isPromotional, source, back) {
+  var productRemovedEvent = {};
+  productRemovedEvent[AnalyticConst.PRODUCT_NAME] = productName;
+  productRemovedEvent[AnalyticConst.COLLECTION_NAME] = collectionName;
+  productRemovedEvent[AnalyticConst.PROMOTIONAL] = isPromotional.toUpperCase();
+  productRemovedEvent[AnalyticConst.SOURCE] = source;
+  productRemovedEvent[AnalyticConst.IS_BACK_CALCULATED] = back;
+  productRemovedEvent[AnalyticConst.IS_COMBO] = "FALSE";
+  productRemovedEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.PRODUCT_REMOVED, productRemovedEvent);
+}
+cleverTapEvents.collectionViewed = function (collectionName) {
+    var collectionViewEvent = {};
+    collectionViewEvent[AnalyticConst.COLLECTION_NAME] = collectionName;
+    collectionViewEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+    cleverTapAPI.event.push(AnalyticConst.COLLECTION_VIEWED, collectionViewEvent);
+  }
+  /* --SEARCH-- */
+cleverTapEvents.productSearch = function (text, store, city, found) {
+  var productSearchEvent = {};
+  productSearchEvent[AnalyticConst.TEXT] = text;
+  productSearchEvent[AnalyticConst.STORE] = store;
+  productSearchEvent[AnalyticConst.CITY] = city;
+  productSearchEvent[AnalyticConst.PRODUCT_FOUND] = found;
+  productSearchEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.PRODUCT_SEARCH, productSearchEvent);
+}
+cleverTapEvents.locationSearch = function (subLocality, city, storeFound) {
+  var locationSearchEvent = {};
+  locationSearchEvent[AnalyticConst.SUB_LOCALITY] = subLocality;
+  locationSearchEvent[AnalyticConst.CITY] = city;
+  locationSearchEvent[AnalyticConst.STORE_FOUND] = storeFound.toUpperCase();
+  locationSearchEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.LOCATION_SEARCH, locationSearchEvent);
+}
+/* --COUPON-- */
+cleverTapEvents.couponApplied = function (couponCode, success) {
+  var couponAppliedEvent = {};
+  couponAppliedEvent[AnalyticConst.COUPON_CODE] = couponCode;
+  couponAppliedEvent[AnalyticConst.SUCCESS] = success.toUpperCase();
+  couponAppliedEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.COUPON_APPLIED, couponAppliedEvent);
+}
+cleverTapEvents.couponRemoved = function (couponCode) {
+    var couponRemovedEvent = {};
+    couponRemovedEvent[AnalyticConst.COUPON_CODE] = couponCode;
+    couponRemovedEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+    cleverTapAPI.event.push(AnalyticConst.COUPON_REMOVED, couponRemovedEvent);
+  }
+  /* --PURCHASE-- */
+cleverTapEvents.purchase = function (purchase) {  
+  var chargeDetails = {}; 
+  chargeDetails["Amount"] = purchase.chargeDetails.getPaidAmount;
+  chargeDetails["Payment Mode"] = purchase.chargeDetails.getPaymentMode;
+  chargeDetails["Order ID"] = purchase.chargeDetails.getOrderId;
+  chargeDetails[AnalyticConst.USER] = purchase.chargeDetails.getMobileNo;
+  chargeDetails[AnalyticConst.FAASOS_CREDIT_USED] = purchase.chargeDetails.isFaasosCreditUsed.toUpperCase();
+  chargeDetails[AnalyticConst.ORDER_DATE] = purchase.chargeDetails.getOrderDate;
+  chargeDetails[AnalyticConst.DAY] = purchase.chargeDetails.getTargetDate;
+  chargeDetails[AnalyticConst.TARGET_DATE] = purchase.chargeDetails.getOrderDate;
+  chargeDetails[AnalyticConst.TARGET_DAY] = purchase.chargeDetails.getTargetDate;
+  chargeDetails[AnalyticConst.COUPON_CODE] = purchase.chargeDetails.getCouponCode ? purchase.chargeDetails.getCouponCode : AnalyticConst.NULL;
+  chargeDetails[AnalyticConst.STORE_NAME] = purchase.chargeDetails.store ? purchase.chargeDetails.store : AnalyticConst.NULL;
+  chargeDetails[AnalyticConst.CITY] = purchase.chargeDetails.city ? purchase.chargeDetails.city : AnalyticConst.NULL;
+  chargeDetails[AnalyticConst.CLIENT_SOURCE] = "website";
+  var productList = purchase.chargeDetails.getProductList;
+  var items = [];
+  for (var i = 0; i < productList.length; i++) {
+    items.push({
+      "name": productList[i].product_name,
+      "category": productList[i].category_name,
+      "price": productList[i].price,
+      "quantity": productList[i].order_count
+    })
+  }
+  var charged = {}
+  charged["Charged ID"] = purchase.chargeDetails.getOrderId;
+  charged["Payment mode"] = purchase.chargeDetails.getPaymentMode;
+  charged["Currency"] = "INR";
+  charged["Amount"] = purchase.chargeDetails.getPaidAmount;
+  charged["Items"] = items;
+  charged[AnalyticConst.CLIENT_SOURCE] = "website"; 
+                                           
+  cleverTapAPI.event.push(AnalyticConst.CHARGED, charged);
+  cleverTapAPI.event.push(AnalyticConst.ORDER, chargeDetails);
+  cleverTapEvents.purchaseAmount(purchase.PurchaseAmountEvent);
+  cleverTapEvents.purchaseCart(purchase.chargeDetails.getProductList);
+  cleverTapEvents.purchaseCoupon(purchase.purchaseCouponEvent);
+}
+cleverTapEvents.purchaseAmount = function (purchase) {
+  var purchaseAmountEvent = {};
+  purchaseAmountEvent[AnalyticConst.BEFORE_DISCOUNT_TOTAL_ORDER_AMOUNT] = parseInt(purchase.getBeforeDiscountTotalOrderAmount);
+  purchaseAmountEvent[AnalyticConst.BEFORE_DISCOUNT_BEFORE_TAX_ORDER_AMOUNT] = parseInt(purchase.getBeforeDiscountBeforeTaxOrderAmount);
+  purchaseAmountEvent[AnalyticConst.BEFORE_DISCOUNT_TAX_AMOUNT] = parseInt(purchase.getBeforeDiscountTaxAmount);
+  purchaseAmountEvent[AnalyticConst.DISCOUNT_AMOUNT] = parseInt(purchase.getDiscountAmount);
+  purchaseAmountEvent[AnalyticConst.PAID_TAX_AMOUNT] = parseInt(purchase.getPaidTaxAmount);
+  purchaseAmountEvent[AnalyticConst.PAID_TOTAL_ORDER_AMOUNT] = (purchase.getPaidAmount);
+  purchaseAmountEvent[AnalyticConst.PAID_ORDER_AMOUNT_WITHOUT_TAX] = parseInt(purchase.getPaidOrderAmountWithoutTax);
+  purchaseAmountEvent[AnalyticConst.PAYMENT_MODE] = purchase.getPaymentMode;
+  purchaseAmountEvent[AnalyticConst.CREDIT_APPLIED] = parseInt(purchase.getCreditAmount);
+  purchaseAmountEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+   
+  cleverTapAPI.event.push(AnalyticConst.ORDER_AMOUNT, purchaseAmountEvent);
+}
+cleverTapEvents.purchaseCart = function (productList) {
+  var items = [];
+  for (var i = 0; i < productList.length; i++) {
+    item = productList[i];
+    var purchaseCartEvent = {};
+    purchaseCartEvent[AnalyticConst.PRODUCT_NAME] = item.product_name;
+    purchaseCartEvent[AnalyticConst.COLLECTION_NAME] = item.category_name;
+    purchaseCartEvent[AnalyticConst.PROMOTIONAL] = "FALSE";
+    purchaseCartEvent[AnalyticConst.FOOD_TYPE] = item.category_name.toUpperCase();
+    purchaseCartEvent[AnalyticConst.PRODUCT_PRICE] = item.price;
+    purchaseCartEvent[AnalyticConst.IS_COMBO] = "FALSE";
+    purchaseCartEvent[AnalyticConst.MEAL_TYPE] =  AnalyticConst.NULL;
+    purchaseCartEvent[AnalyticConst.CUISINE] =  AnalyticConst.NULL;
+    purchaseCartEvent[AnalyticConst.SUPPLY_TYPE] =   AnalyticConst.NULL;
+    purchaseCartEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+    cleverTapAPI.event.push(AnalyticConst.ORDER_CART, purchaseCartEvent);
+  }
+}
+cleverTapEvents.purchaseCoupon = function (purchaseCoupon) {
+  var purchaseCouponEvent = {} ;
+  var discount = parseInt(purchaseCoupon.discount)
+  var order = parseInt(purchaseCoupon.order)  
+  purchaseCouponEvent[AnalyticConst.COUPON_CODE] = purchaseCoupon.coupon  ? purchaseCouponEvent.coupon : AnalyticConst.NULL;;
+  purchaseCouponEvent[AnalyticConst.COUPON_DISCOUNT] = discount;
+  purchaseCouponEvent[AnalyticConst.TOTAL_ORDER_AMOUNT] = order;
+  purchaseCouponEvent[AnalyticConst.STORE] = purchaseCoupon.store;
+  purchaseCouponEvent[AnalyticConst.CITY] = purchaseCoupon.city;  
+  purchaseCouponEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  
+  cleverTapAPI.event.push(AnalyticConst.ORDER_COUPON, purchaseCouponEvent);
+} 
+cleverTapEvents.paymentFailure = function (paymentType, price, mobileNo) {
+  var paymentFailureEvent = {};
+  paymentFailureEvent[AnalyticConst.PAYMENT_TYPE] = paymentType;
+  paymentFailureEvent[AnalyticConst.PRICE] = price;
+  PAYMENT_FAILURElureEvent[AnalyticConst.MOBILE_NO] = mobileNo;
+  paymentFailureEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.PAYMENT_FAILURE, paymentFailureEvent);
+}
+cleverTapEvents.setCredits = function (credits) {
+  var creditUpdate = {};
+  creditUpdate[AnalyticConst.FAASOS_CREDIT] = credits;
+  creditUpdate[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.profile.push(creditUpdate);
+}
+cleverTapEvents.setFoodType = function (foodType) {
+  var profileUpdate = {};
+  profileUpdate[AnalyticConst.FOOD_TYPE] = foodType;
+  profileUpdate[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.profile.push(profileUpdate);
+}
+
+cleverTapEvents.orderCompleteInAppEvent = function() {
+  cleverTapAPI.event.push(AnalyticConst.NOTIFICATION_ORDER_COMPLETE);
+}
+cleverTapEvents.homeInAppEvent = function (value) {
+  var homeInAppEvent = {};
+  homeInAppEvent[AnalyticConst.FLOW] = value;
+  homeInAppEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.NOTIFICATION_HOME, homeInAppEvent);
+} 
+cleverTapEvents.enablePushNotif = function() {
+  clevertap.notifications.push(
+      'Hey!!',
+      'Want to get awesome offers on our 100+ delicacies?',
+      'Yeah Sure',
+      'No thanks',
+      '#f28046');
+  }
+cleverTapEvents.addTest  = function() {
+    var mod = 'cleverObjTesting';
+    try {
+        localStorage.setItem(mod, mod);
+        localStorage.removeItem(mod);
+        return true;
+    } catch(e) {
+        return false;
+    }
+};
+// VOUCHER CODE EVENTS
+cleverTapEvents.voucherRemoved = function (voucherCode) {
+  var voucherRemovedEvent = {};
+  voucherRemovedEvent[AnalyticConst.VOUCHER_CODE] = voucherCode;
+  voucherRemovedEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.VOUCHER_REMOVED, voucherRemovedEvent);
+}
+cleverTapEvents.voucherApplied = function (voucherCode, success) {
+  var couponAppliedEvent = {};
+  couponAppliedEvent[AnalyticConst.VOUCHER_CODE] = voucherCode;
+  couponAppliedEvent[AnalyticConst.SUCCESS] = success.toUpperCase();
+  couponAppliedEvent[AnalyticConst.CLIENT_SOURCE] = "website";
+  cleverTapAPI.event.push(AnalyticConst.VOUCHER_APPLIED, couponAppliedEvent);
+}

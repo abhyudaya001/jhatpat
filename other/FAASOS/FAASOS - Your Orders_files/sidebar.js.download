@@ -1,0 +1,143 @@
+$(document).ready(function() {
+
+
+
+	// $('#about_us').show();
+	// $('#careers').show();
+	// $('#blogs').show();
+	// $('#orders').hide();
+	// $('#addresses').hide();
+	// $('#profile').hide();
+	// $('#madeToOrder').hide();	
+	// $('#log_out').hide();
+	// $('#loginuser').show();
+	// $('#mobile_login').show();
+	// $('.userAvatar').hide();
+	// $('#collections').hide();
+
+
+
+	$('#about_us').removeClass('hide');
+	$('#careers').removeClass('hide');
+	$('#blogs').removeClass('hide');
+	$('.ordersSidebar').addClass('hide');
+	$('#addresses').addClass('hide');
+	$('#profile').addClass('hide');
+	$('#shareAndEarn').addClass('hide');
+	$('#madeToOrder').addClass('hide');
+	$('#log_out').addClass('hide');
+	$('#orders').removeClass('hide');
+	$('#mobile_login').removeClass('hide');
+	$('.userAvatar').addClass('hide');
+	$('#collections').addClass('hide');
+	var ldata;
+	try {
+		if(locale_data){
+			ldata = locale_data
+		}
+	} catch (error) {
+	}
+	if(localStorage && localStorage.getItem("gtm_source")==='phonepe_affiliate' || (ldata && ldata.gtm_source==='phonepe_affiliate')){
+		$('#about_us').addClass('hide');
+		$('#careers').addClass('hide');
+		$('#blogs').addClass('hide');
+		$('#orders').addClass('hide');
+		$('#mobile_login').addClass('hide');
+		$('#coupons').addClass('hide');
+		$('#faasos_elite').addClass('hide');
+		$('#elite-o-meter').addClass('hide');
+		$('#bolt').addClass('hide');
+		$('.downloadAppMenuItems').addClass('hide');
+		$('#loginuser').removeClass('show-for-small-only');
+		$('#loginuser').addClass('hide');
+		$('#cheer').addClass('hide');
+	}
+
+	$(document).on("click",".faasos-menu",function() {
+		var object={};
+		$.ajax({
+
+            url: "/user_data_exists",
+            crossDomain: false,
+            type: 'POST',    
+            
+            success: function(result) {
+            	if(result.msg=='success'){
+            	//$('#about_us').show();
+            	$('#about_us').removeClass('hide');
+				//$('#careers').show();
+				$('#careers').removeClass('hide');
+				//$('#blogs').show();	
+				$('#blogs').removeClass('hide');
+				//$('#orders').show();
+				$('#ordersSidebar').removeClass('hide');
+				//$('#addresses').show();
+				if(window.location.pathname == '/') {
+					$('#addresses').removeClass('hide');
+				}
+				//$('#profile').show();
+				$('#profile').removeClass('hide');
+				//$('#elite-o-meter').removeClass('hide');
+				if(result.referral_code && result.referral_code!==""){
+					$('#shareAndEarn').removeClass('hide');
+				}
+				//$('#madeToOrder').show();					
+				$('#madeToOrder').removeClass('hide');
+				$('#gift_a_meal').removeClass('hide');
+				//$('#log_out').show();
+				$('#log_out').removeClass('hide');
+				//$('#loginuser').hide();
+				$('#loginuser').addClass('hide');
+				//$('#mobile_login').hide();
+				$('#mobile_login').addClass('hide');
+				//$('.userAvatar').show();
+				$('.userAvatar').removeClass('hide');
+				//$('#collections').show();
+				$('#collections').removeClass('hide');
+				$('#log_out').click(function(){ 
+					clevertap.logout();
+				})
+				if(localStorage.getItem("gtm_source")==='phonepe_affiliate' || (locale_data && locale_data.gtm_source==='phonepe_affiliate')){
+					$('#about_us').addClass('hide');
+					$('#careers').addClass('hide');
+					$('#blogs').addClass('hide');
+					$('#ordersSidebar').removeClass('hide');
+					if(window.location.pathname == '/') {
+						$('#addresses').addClass('hide');
+					}
+					$('#profile').addClass('hide');
+					$('#shareAndEarn').addClass('hide');
+					
+					$('#madeToOrder').addClass('hide');
+					$('#gift_a_meal').removeClass('hide');
+					$('#log_out').addClass('hide');
+					$('#loginuser').removeClass('show-for-small-only');
+					$('#loginuser').addClass('hide');
+					$('#mobile_login').addClass('hide');
+					$('.userAvatar').removeClass('hide');
+					$('#collections').removeClass('hide');
+					$('#cheer').addClass('hide');
+				}
+			}
+			//Sidebar Hide Links
+                if ( !$('.primaryMenuItems li:visible').length ) {
+  			        $('.primaryMenuItems').hide();
+		        }
+		        else {
+			        $('.primaryMenuItems').show();
+		        }
+        
+            },
+            error: function(request, status, error) {
+            	if(request.status === 401){
+            	  window.location.href="/logout";
+            	}
+            	console.log("-----------------");
+            	console.log(error);
+            	console.log("-----------------");
+
+            }
+        })
+
+	});
+});	

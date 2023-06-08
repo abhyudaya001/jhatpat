@@ -1,0 +1,961 @@
+$(function () {
+    if (cleverTapEvents.addTest()) {
+      var cleverObj = localStorage.getItem('cleverObj');
+      cleverObj = JSON.parse(cleverObj);
+    }
+    var faasos_wallet_amount = 0;
+    faasos_wallet_amount = local_data.wallet_amount;
+    var payable_amount = local_data.payable_amount;
+
+    //$('#cartPayment').height($(window).height());
+    //$('.stickyHeader').parent().find('.left-off-canvas-menu').height($(document).height());
+
+
+    // CitrusPay.Merchant.Config = {
+    //   // Merchant details
+    //   Merchant: {
+    //     accessKey: local_data.citrus_access_key,
+    //     vanityUrl: local_data.citrus_vanity_url
+    //   }
+    // };
+
+    //fetchPaymentOptions();
+
+
+    window.Simpl.setApprovalConfig({
+      email: $("#citrusEmail").val(),
+      phone_number: $("#citrusMobile").val()
+    });
+
+    window.Simpl.on('approval', function yep() {
+      var gtm_source = sessionStorage.getItem("gtm_source");
+      if(gtm_source == "amazon_affiliate") {
+        $('.paymentOptionAccordion li').not('#amazonAccordion').hide()
+      }
+      else {
+        $(".simpl_option_select").show();
+      }
+    }, function nope() {
+      $(".simpl_option_select").remove();
+    });
+
+    //window.Simpl.setTransactionAmount(payable_amount * 100);
+    //window.Simpl.setTarget(document.getElementById('simpl-checkout'));
+
+    window.Simpl.on('success', function (response) {
+      // response is the response from Simpl that will include the following keys:
+      // {status: 'success', transaction_token: '123'}
+      place_order_ajax("simpl", response.transaction_token);
+    });
+    window.Simpl.on('error', function (response) {
+      // response is the response from Simpl that will include the following keys:
+      // {status: 'error', error_message: 'XYZ'}
+      alert_err_message(response.error_message);
+    });
+
+    /*$("input[name='cardOption']").click(function () {
+     if (document.getElementById('savedCard').checked) {
+     $('#debitCreditCardPanel').hide();
+     $('#savedCardPanel').show();
+     }
+     else if (document.getElementById('debitCreditCard').checked) {
+     $('#savedCardPanel').hide();
+     $('#debitCreditCardPanel').show();
+     }
+     });*/
+
+    function getParameterByName(name) {
+      name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+      var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+              results = regex.exec(window.location.search);
+      return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    }
+
+    if (parseInt(getParameterByName('payment_fail')) === 1) {
+      alert_err_message("Payment Failed. Please Try Again ");
+    }
+
+
+
+    var payment_method_selected = null;
+    var payment_type = null;
+    var paytm_token = "";
+
+    $(".payment_method_selection").on('click', function () {
+      var selected_accordion_id = $(this).attr("id");
+      console.log('------select according id',selected_accordion_id);
+
+      var is_selected = $(this).attr("aria-expanded");
+      console.log('------value is select',is_selected);
+
+      if (selected_accordion_id == "payment_card") {
+        payment_method_selected = "card";
+        // if (is_selected == "false") {
+        //   payment_method_selected = "card";
+        // } else {
+        //   payment_method_selected = null;
+        // }
+      }
+      if (selected_accordion_id == "payment_cod") {
+        payment_method_selected = "cod";
+        // if (is_selected == "false") {
+        //   payment_method_selected = "cod";
+        // } else {
+        //   payment_method_selected = null;
+        // }
+      }
+      if (selected_accordion_id == "payment_wallet") {
+        payment_method_selected = "wallet";
+        // if (is_selected == "false") {
+        //   payment_method_selected = "wallet";
+        // } else {
+        //   payment_method_selected = null;
+        // }
+      }
+      if (selected_accordion_id == "payment_netbanking") {
+        payment_method_selected = "netbanking";
+        // if (is_selected == "false") {
+        //   payment_method_selected = "netbanking";
+        // } else {
+        //   payment_method_selected = null;
+        // }
+      }
+      if (selected_accordion_id == "payment_pay_later_elite") {
+        payment_method_selected = "simpl";
+        // if (is_selected == "false") {
+        //   payment_method_selected = "simpl";
+        // } else {
+        //   payment_method_selected = null;
+        // }
+      }
+      if (selected_accordion_id == "payment_amazon") {
+        payment_method_selected = "payment_amazon";
+        // if (is_selected == "false") {
+        //   payment_method_selected = "payment_amazon";
+        // } else {
+        //   payment_method_selected = null;
+        // }
+      }
+      if (selected_accordion_id == "phonepe") {
+        payment_method_selected = "phonepe";
+        // if (is_selected == "false") {
+        //   payment_method_selected = "phonepe";
+        // } else {
+        //   payment_method_selected = null;
+        // }
+      }
+      if (selected_accordion_id == "paypal") {
+        payment_method_selected = "paypal";
+        // if (is_selected == "false") {
+        //   payment_method_selected = "paypal";
+        // } else {
+        //   payment_method_selected = null;
+        // }
+      }
+      if (selected_accordion_id == "gpay") {
+        if($('#gpayPhoneNumber').val().length != 10){
+          payment_method_selected = null;
+          $('#gpayPhoneNumberErr').text("Please Enter 10-digit Number");
+        }
+        else{
+          $('#gpayPhoneNumberErr').text("");
+          payment_method_selected = "gpay";
+        }
+      }
+      if (selected_accordion_id == "sodexo") {
+        console.log("sodexo_get_saved_card_details local_data.customer_id "+local_data.customer_id)
+        $.ajax({url: "/sodexo_get_saved_card_details?customer_id="+local_data.customer_id,
+          crossDomain: false,
+          type: 'GET',
+          headers: {
+            'Client-Os': 'WebApp'
+          },
+          beforeSend: function () {
+            $('.load_overlay').show();
+          },
+          success: function (sodexo_get_card) {
+            if(sodexo_get_card.success){
+              $("#payWithSavedCardDetails").html("<span><span>Saved card  "+sodexo_get_card.card_details.maskedPan+"</span><span style='padding-left:225px'>balace:"+sodexo_get_card.card_details.balance+"</span></span>");
+              $('.load_overlay').hide();
+            }
+            else{
+              $('.load_overlay').hide();
+              $(".sodexoSavedCards").hide();
+            }
+          },
+          error: function (request, status, error) {
+
+          }
+        })
+
+        if (is_selected == "false") {
+          payment_method_selected = "sodexo";
+        } else {
+          payment_method_selected = null;
+        }
+      }
+      if (selected_accordion_id == "payment_paytm") {
+        payment_method_selected = "payment_paytm";
+        // if (is_selected == "false") {
+        //   payment_method_selected = "payment_paytm";
+        // } else {
+        //   payment_method_selected = null;
+        // }
+      }
+      if (selected_accordion_id == "payment_telr") {
+        payment_method_selected = "payment_telr";
+        // if (is_selected == "false") {
+        //     payment_method_selected = "payment_telr";
+        // } else {
+        //     payment_method_selected = null;
+        // }
+    }
+      payable_amount = parseInt($("#total_amount_footer").text());
+    });
+
+
+    $('.place_order').click(function (event) {
+      console.log('----------payment method selected',payment_method_selected);
+      var payment_method = null;
+      $("#alert_main").empty();
+      $("#alert_card").empty();
+      if(localStorage.getItem("gtm_source") === 'phonepe_affiliate'){
+        payment_method = 'phonepe';
+      }
+      else if (payable_amount == 0) {
+        payment_method = "cod";
+      } else if (payment_method_selected == "cod") {
+        payment_method = "cod";
+      } else if (payment_method_selected == "payment_amazon") {
+        payment_method = "amazon_pay";
+      } else if (payment_method_selected == "payment_paytm") {
+        payment_method = "paytm";
+      } else if (payment_method_selected == "phonepe") {
+        payment_method = "phonepe";
+      } else if(payment_method_selected == "paypal") {
+        payment_method = "paypal";
+      } else if(payment_method_selected == "gpay") {
+        payment_method = "gpay";
+      }else if(payment_method_selected == "sodexo") {
+        var  selected_wallet = $('input[name=SodexoOptions]:checked').val();
+        payment_method = selected_wallet;
+      } else if (payment_method_selected == "netbanking") {
+        if ($("#citrusAvailableOptions").val()) {
+          payment_method = "netbanking";
+        } else {
+          alert_err_message("Select Bank");
+          return false;
+        }
+      } else if (payment_method_selected == "card") {
+        if (($("#paytmNumber").val()) && ($("#paytmCardHolder").val()) && ($('#paytmExpiry').val()) && ($("#paytmCvv").val()) && ($("#paytmCardType").val())) {
+          if($("#paytmCardType").val() == "credit"){
+            payment_method = "paytm_cc";
+          }else{
+            payment_method = "paytm_dc";
+          }
+        }else {
+          paytmClientErrMsg("All Fields Required");
+          return false;
+        }
+      } else if (payment_method_selected == "wallet") {
+        var selected_wallet = $('input[name=walletOption]:checked').val();
+
+        // if (selected_wallet == "paytm") {
+        //   payment_method = "paytm";
+        // }
+        if (selected_wallet == "mobikwik") {
+          payment_method = "mobikwik";
+        }
+        else if (selected_wallet == "freecharge") {
+          payment_method = "freecharge";
+        }
+        else if (selected_wallet == "olamoney") {
+          payment_method = "olamoney";
+        }
+        else if (selected_wallet == "phonepe"){
+
+          payment_method = "phonepe";
+
+
+        }
+        else {
+          alert_err_message("Please select Wallet ");
+          return false;
+        }
+      } else if (payment_method_selected == "simpl") {
+        payment_method = "simpl";
+        window.Simpl.authorizeTransaction();
+        return false;
+      } else if (payment_method_selected == "payment_telr") {
+        payment_method = "telr";
+      } else {
+        alert_err_message("Please select Mode of Payment ");
+        return false;
+      }
+      var payAmount = $("#total_amount").html()
+      if (cleverObj && cleverTapEvents.addTest()) {
+        cleverObj.PurchaseAmountEvent.getPaymentMode = payment_method;
+        cleverObj.chargeDetails.getPaymentMode = payment_method;
+        cleverObj.purchaseCouponEvent.order = payAmount;
+        if (cleverObj.PurchaseAmountEvent.getDiscountAmount == "0") {
+          cleverObj.chargeDetails.isFaasosCreditUsed = "FALSE"
+        } else {
+          cleverObj.chargeDetails.isFaasosCreditUsed = "TRUE"
+        }
+        localStorage.setItem('cleverObj', JSON.stringify(cleverObj));
+      }
+        if(payment_method_selected == "card"){
+          var expiry_date = $('#paytmExpiry').val();
+          expiry_month = expiry_date.split('/')[0];
+          expiry_year = expiry_date.split('/')[1];
+          var data={
+            "CARD_EXPIRY_MONTH": expiry_month,
+            "CARD_EXPIRY_YEAR": expiry_year,
+            "CARD_NUMBER": $("#paytmNumber").val(),
+            "CUST_ID": local_data.customer_id,
+            "CVV": $("#paytmCvv").val(),
+            "MID": local_data.paytm_mid
+          };
+          $.when(payment(data)).then(function(data, textStatus, jqXHR ) {
+              data = ((typeof data === 'string') ? JSON.parse(data) : data );
+              if(data.STATUS == "SUCCESS"){
+                paytm_token = data.TOKEN ;
+                place_order_ajax(payment_method, null);
+                $(this).off(event);
+              }else{
+                alert_err_message(data.msg);
+              }
+          });
+        }else{
+            place_order_ajax(payment_method, null);
+            if(localStorage.getItem("gtm_source") !== 'phonepe_affiliate'){
+              $(this).off(event);
+            }
+        }
+    })
+
+    function place_order_ajax(payment_method, simpl_token) {
+      console.log('-------inside place order ajax',payment_method);
+      $.ajax({
+        url: "/place_order",
+        crossDomain: false,
+        type: 'POST',
+        headers: {
+          'Client-Os': 'WebApp',
+          'darthvader': local_data.access_token
+        },
+        // contentType: "application/json; charset=utf-8",
+        data: {
+          payment_method: payment_method,
+          faasos_credit: $("#useFaasosCredit").is(':checked'),
+          change_value: $('input[name=changeOptions]:checked').val(),
+          simpl_token: simpl_token,
+          gtm_source: gtm_source,
+          gpay_mobilenumber: $('#gpayPhoneNumber').val()
+        },
+        beforeSend: function () {
+          $('.load_overlay').show();
+        },
+        success: function (result) {
+          if (!result.err) {
+            if (result.response.citrus) {
+              $("#citrusMerchantTxnId").val(result.response.citrus.merchantTxnId);
+              $("#citrusSignature").val(result.response.citrus.requestSignature);
+              $("#citrusReturnUrl").val(result.response.citrus.return_url_web);
+              $("#citrusAmount").val(result.response.citrus.value);
+              if (payment_method == "netbanking") {
+                makePayment("netbanking");
+              }
+              // else {
+              //   makePayment("card");
+              // }
+              /* Formating Started*/
+            } else if (result.response.paytm && payment_method == 'paytm') {
+             var post_data_checksum = {
+               CHANNEL_ID: result.response.paytm.CHANNEL_ID_WEB,
+               CUST_ID: local_data.customer_id,
+               INDUSTRY_TYPE_ID: result.response.paytm.INDUSTRY_TYPE_ID,
+               MID: result.response.paytm.MID,
+               ORDER_ID: result.response.paytm.ORDER_ID,
+               TXN_AMOUNT: result.response.paytm.value,
+               WEBSITE: result.response.paytm.WEBSITE_WEB,
+               PROMO_CAMP_ID: result.response.paytm.COUPON_CODE,
+               CALLBACK_URL: result.response.paytm.checksumValidationURL_web,
+               REQUEST_TYPE: result.response.paytm.REQUEST_TYPE
+             }
+             $.ajax({url: local_data.api_url + "paytm/generate/checksum.json",
+               crossDomain: true,
+               method: "POST",
+               data: post_data_checksum,
+               success: function (checksum_result) {
+                 $('<form>', {
+                   "method": "POST",
+                   "id": "paytm_form",
+                   "html": "<input type='hidden' id='REQUEST_TYPE' name='REQUEST_TYPE' value='" + result.response.paytm.REQUEST_TYPE + "'>\n\
+                      <input type='hidden' id='MID' name='MID' value='" + result.response.paytm.MID + "'>\n\
+                      <input type='hidden' id='ORDER_ID' name='ORDER_ID' value='" + result.response.paytm.ORDER_ID + "'>\n\
+                      <input type='hidden' id='CUST_ID' name='CUST_ID' value='" + local_data.customer_id + "'>\n\
+                      <input type='hidden' id='TXN_AMOUNT' name='TXN_AMOUNT' value='" + result.response.paytm.value + "'>\n\
+                      <input type='hidden' id='CHANNEL_ID' name='CHANNEL_ID' value='" + result.response.paytm.CHANNEL_ID_WEB + "'>\n\
+                      <input type='hidden' id='INDUSTRY_TYPE_ID' name='INDUSTRY_TYPE_ID' value='" + result.response.paytm.INDUSTRY_TYPE_ID + "'>\n\
+                      <input type='hidden' id='WEBSITE' name='WEBSITE' value='" + result.response.paytm.WEBSITE_WEB + "'>\n\
+                      <input type='hidden' id='PROMO_CAMP_ID' name='PROMO_CAMP_ID' value='" + result.response.paytm.COUPON_CODE + "'>\n\
+                      <input type='hidden' id='CHECKSUMHASH' name='CHECKSUMHASH' value='" + checksum_result.CHECKSUMHASH + "'>\n\
+                      <input type='hidden' id='CALLBACK_URL' name='CALLBACK_URL' value='" + result.response.paytm.checksumValidationURL_web + "'>\n\
+                      ",
+                   "action": result.response.paytm.paytm_form_post_url + '?orderid=' + result.response.paytm.ORDER_ID
+                 }).appendTo(document.body).submit();
+               },
+               error: function (request, status, error) {
+                 if (request.status === 401) {
+                   window.location.href = "/logout";
+                 }
+                 $('.load_overlay').hide();
+                 console.log(error);
+               }
+             });
+            } else if (result.response.paytm && (payment_method == 'paytm_cc' || payment_method == 'paytm_dc')){
+              var post_data_checksum = {
+                CHANNEL_ID: result.response.paytm.CHANNEL_ID,
+                CUST_ID: local_data.customer_id,
+                INDUSTRY_TYPE_ID: result.response.paytm.INDUSTRY_TYPE_ID,
+                MID: result.response.paytm.MID,
+                ORDER_ID: result.response.paytm.ORDER_ID,
+                TXN_AMOUNT: result.response.paytm.value,
+                WEBSITE: result.response.paytm.WEBSITE_WEB,
+                CALLBACK_URL: result.response.paytm.checksumValidationURL_web,
+                REQUEST_TYPE: result.response.paytm.REQUEST_TYPE,
+                PAYMENT_DETAILS: paytm_token,
+                THEME: result.response.paytm.THEME,
+                AUTH_MODE: result.response.paytm.AUTH_MODE,
+                PAYMENT_TYPE_ID: result.response.paytm.PAYMENT_TYPE_ID,
+                PROMO_CAMP_ID: result.response.paytm.COUPON_CODE,
+                CLIENT_SOURCE: 4
+              }
+              $.ajax({url: local_data.api_url + "paytm/generate/checksum.json",
+                crossDomain: true,
+                method: "POST",
+                data: post_data_checksum,
+                success: function (checksum_result) {
+                  $('<form>', {
+                    "method": "POST",
+                    "id": "paytm_form",
+                    "html": "<input type='hidden' id='REQUEST_TYPE' name='REQUEST_TYPE' value='" + result.response.paytm.REQUEST_TYPE + "'>\n\
+                     <input type='hidden' id='MID' name='MID' value='" + result.response.paytm.MID + "'>\n\
+                     <input type='hidden' id='ORDER_ID' name='ORDER_ID' value='" + result.response.paytm.ORDER_ID + "'>\n\
+                     <input type='hidden' id='CUST_ID' name='CUST_ID' value='" + local_data.customer_id + "'>\n\
+                     <input type='hidden' id='TXN_AMOUNT' name='TXN_AMOUNT' value='" + result.response.paytm.value + "'>\n\
+                     <input type='hidden' id='CHANNEL_ID' name='CHANNEL_ID' value='" + result.response.paytm.CHANNEL_ID + "'>\n\
+                     <input type='hidden' id='INDUSTRY_TYPE_ID' name='INDUSTRY_TYPE_ID' value='" + result.response.paytm.INDUSTRY_TYPE_ID + "'>\n\
+                     <input type='hidden' id='WEBSITE' name='WEBSITE' value='" + result.response.paytm.WEBSITE_WEB + "'>\n\
+                     <input type='hidden' id='CHECKSUMHASH' name='CHECKSUMHASH' value='" + checksum_result.CHECKSUMHASH + "'>\n\
+                     <input type='hidden' id='PAYMENT_DETAILS' name='PAYMENT_DETAILS' value='" + paytm_token + "'>\n\
+                     <input type='hidden' id='CALLBACK_URL' name='CALLBACK_URL' value='" + result.response.paytm.checksumValidationURL_web + "'>\n\
+                     <input type='hidden' id='THEME' name='THEME' value='" + result.response.paytm.THEME + "'>\n\
+                     <input type='hidden' id='AUTH_MODE' name='AUTH_MODE' value='" + result.response.paytm.AUTH_MODE + "'>\n\
+                     <input type='hidden' id='PAYMENT_TYPE_ID' name='PAYMENT_TYPE_ID' value='" + result.response.paytm.PAYMENT_TYPE_ID + "'>\n\
+                     ' ",
+                    "action": result.response.paytm.paytm_form_post_url + '?orderid=' + result.response.paytm.ORDER_ID
+                  }).appendTo(document.body).submit();
+                },
+                error: function (request, status, error) {
+                  if (request.status === 401) {
+                    window.location.href = "/logout";
+                  }
+                  $('.load_overlay').hide();
+                  console.log(error);
+                }
+              });
+            } else if (result.response.mobikwik) {
+              var post_data_checksum = {email: $("#citrusEmail").val(),
+                amount: result.response.mobikwik.value,
+                cell: $("#citrusMobile").val(),
+                orderid: result.response.mobikwik.order_id,
+                mid: result.response.mobikwik.merchant_id,
+                redirecturl: result.response.mobikwik.checksumValidationURL_web,
+              }
+              $.ajax({url: local_data.api_url + "mobikwik/generate/web_app_checksum.json",
+                crossDomain: true,
+                method: "POST",
+                contentType: "application/json; charset=utf-8",
+                data: JSON.stringify(post_data_checksum),
+                success: function (checksum_result) {
+                  $('<form>', {
+                    "method": "POST",
+                    "id": "mobikwik_form",
+                    "html": "<input type='hidden' id='email' name='email' value='" + $("#citrusEmail").val() + "'>\n\
+                       <input type='hidden' id='amount' name='amount' value='" + result.response.mobikwik.value + "'>\n\
+                       <input type='hidden' id='cell' name='cell' value='" + $("#citrusMobile").val() + "'>\n\
+                       <input type='hidden' id='orderid' name='orderid' value='" + result.response.mobikwik.order_id + "'>\n\
+                       <input type='hidden' id='mid' name='mid' value='" + result.response.mobikwik.merchant_id + "'>\n\
+                       <input type='hidden' id='merchantname' name='merchantname' value='" + result.response.mobikwik.merchant_name + "'>\n\
+                       <input type='hidden' id='redirecturl' name='redirecturl' value='" + result.response.mobikwik.checksumValidationURL_web + "'>\n\
+                       <input type='hidden' id='checksum' name='checksum' value='" + checksum_result.checksum + "'>\n\
+                       ",
+                    "action": result.response.mobikwik.mobikwik_form_post_url
+                  }).appendTo(document.body).submit();
+                },
+                error: function (request, status, error) {
+                  if (request.status === 401) {
+                    window.location.href = "/logout";
+                  }
+                  $('.load_overlay').hide();
+                  console.log(error);
+                }
+              });
+            } else if (result.response.freecharge) {
+              //console.log(JSON.stringify(result.response.freecharge));
+                  $('<form>', {
+                    "method": "POST",
+                    "id": "freecharge_form",
+                    "html": "<input type='hidden' id='merchantId' name='merchantId' value='" + result.response.freecharge.merchantId + "'>\n\
+                       <input type='hidden' id='checksum' name='checksum' value='" + result.response.freecharge.checksum + "'>\n\
+                       <input type='hidden' id='merchantTxnId' name='merchantTxnId' value='" + result.response.freecharge.merchantTxnId + "'>\n\
+                       <input type='hidden' id='amount' name='amount' value='" + result.response.freecharge.amount + "'>\n\
+                       <input type='hidden' id='channel' name='channel' value='" + result.response.freecharge.channel + "'>\n\
+                       <input type='hidden' id='surl' name='surl' value='" + result.response.freecharge.surl + "'>\n\
+                       <input type='hidden' id='currency' name='currency' value='" + result.response.freecharge.currency + "'>\n\
+                       <input type='hidden' id='furl' name='furl' value='" + result.response.freecharge.furl + "'>\n\
+                       <input type='hidden' id='productInfo' name='productInfo' value='" + result.response.freecharge.productInfo + "'>\n\
+                       <input type='hidden' id='email' name='email' value='" + result.response.freecharge.email + "'>\n\
+                       <input type='hidden' id='mobile' name='mobile' value='" + result.response.freecharge.mobile + "'>\n\
+                       <input type='hidden' id='customerName' name='customerName' value='" + result.response.freecharge.customerName + "'>\n\
+                       ",
+                    "action": result.response.freecharge.freecharge_post_url
+                  }).appendTo(document.body).submit();
+            } else if (result.response.olamoney) {
+              var url = result.response.olamoney.olamoney_post_url+"?bill="+result.response.olamoney.base_64+"&phone="+$("#citrusMobile").val() ;
+              window.location.href = url ;
+            } else if (result.response.amazon) {
+                window.location = result.response.amazon.redirect_url ;
+            } else if (result.response.phonepe) {
+              if(localStorage.getItem("gtm_source") === 'phonepe_affiliate'){
+                result.response.selected_products = local_data.selected_products;
+                result.response.discount = parseInt($('#discount').html());
+                result.response.delivery_fees = parseInt($('#delivery_fee').html());
+                result.response.base_fare = parseInt($('#total_amount').html());
+                var url_for = local_data.payments_url + "phonepe/affiliate.json";
+                $.ajax({url: url_for,
+                  crossDomain: true,
+                  method: "POST",
+                  headers:{
+                    "Content-Type": 'application/json'
+                  },
+                  data: JSON.stringify(result.response),
+                  beforeSend: function () {
+                    $('.load_overlay').show();
+                  },
+                  success: function (phonepe_result) {
+                    if(phonepe_result.success==false){
+                      $('.load_overlay').hide();
+                      phonepeDismissErrorMsg("Payment failed from phonepe. Please Try Again");
+                      window.scrollTo(0,$('#paymentFailureMsg').offset().top-100)
+                      return;
+                    }
+                    try {
+                      PhonePe.PhonePe.build(PhonePe.Constants.Species.web)
+                      .then(function(sdk){
+                        logToPapertrail('phonepe sdk built successfully')
+                        //Dummy information
+                        let merchantName = "FAASOS"
+                        let fallbackURL = "/checkout";
+                        let imageURL = "https://assets.faasos.io/order.faasos.io/production/webapp/faasos-logo-purple.jpg?d=100"
+    
+                        //Any metadata to show on PhonePe's payment screen
+                        //Array of key-value pairs
+                        var products = [];
+                        var totalProductCount = 0;
+                        local_data.selected_products.forEach(function(product){
+                          products.push(product.product_name)
+                          totalProductCount = parseInt(totalProductCount) + parseInt(product.order_count)
+                        })
+                        let orderedMetadata = [{
+                            "Products": products.join(", ")
+                          },
+                          {"No. Of Items": totalProductCount.toString()}
+                        ]
+                        //Context usually looks like this
+                        var context = phonepe_result.data
+                        logToPapertrail('phonepe sdk built successfully and data for openPaymentsPage made.')
+                        try {
+                          var order_status_body = {}
+                          order_status_body.transaction_id = result.response.phonepe.transaction_id
+                          order_status_body.order_id = result.response.order_id
+                          order_status_body.phonepeInApp = true
+                          var url_for = local_data.payments_url + "phonepe/order/status.json";
+                          sdk.openPaymentsPage(merchantName, context, fallbackURL, imageURL, orderedMetadata)
+                          .then((response) => {
+                            logToPapertrail('phonepe success in resolved promise of openPaymentsPage')
+                            phonepeOrderStatusCheck(url_for,order_status_body);
+                            // $.ajax({url: url_for,
+                            //   crossDomain: true,
+                            //   method: "POST",
+                            //   headers:{
+                            //     "Content-Type": 'application/json',
+                            //     "Client-Os": "WebApp"
+                            //   },
+                            //   beforeSend: function () {
+                            //     $('.load_overlay').show();
+                            //   },
+                            //   data: JSON.stringify(order_status_body),
+                            //   success: function (order_status_result) {
+                            //     $('.load_overlay').hide();
+                            //     logToPapertrail('phonepe success in openPaymentsPage. Order Status API called successfully')
+                            //     if(order_status_result.success && order_status_result.success === true){
+                            //       window.location = '/payment/success'
+                            //     }  
+                            //     else{
+                            //       phonepeDismissErrorMsg("Payment Failed. Please Try Again");
+                            //       window.scrollTo(0,$('#paymentFailureMsg').offset().top-100)
+                            //     }
+                            //   },
+                            //   error: function (request, status, error) {
+                            //     $('.load_overlay').hide();
+                            //     logToPapertrail('phonepe success in openPaymentsPage. Order Status API ajax error thrown')
+                            //     if(request.status === 400 || request.status === 401){
+                            //         window.location.href="/logout";
+                            //     }
+                            //     else{
+                            //       phonepeDismissErrorMsg("Payment Failed. Please Try Again");
+                            //       window.scrollTo(0,$('#paymentFailureMsg').offset().top-100)
+                            //     }
+                            //   }
+                            // })
+                          }).catch((err) => {
+                            // $('.load_overlay').hide();
+                            // const errMsg = "Payment couldn't go through. Please try again!";
+                            // logToPapertrail("phonepe "+errMsg+". Promise rejected. "+err.message)
+                            // phonepeDismissErrorMsg(errMsg);
+                            // window.scrollTo(0,$('#paymentFailureMsg').offset().top-100)
+                            logToPapertrail("phonepe "+err.message+'.Error in catch of openPaymentsPage')
+                            phonepeOrderStatusCheck(url_for,order_status_body);
+                          })
+                        } catch (error) {
+                          const errMsg = error && error.message ? error.message : ''
+                          logToPapertrail("phonepe "+errMsg+'.Error occured while after phonepe success sdk instance call.')
+                        }
+                        
+                      })
+                      .catch(function(err){
+                        $('.load_overlay').hide();
+                        var eMsg = err && err.message ? err.message : "Some error occured. Please try again!"
+                        logToPapertrail("phonepe" + eMsg+". Error in catch statement of phonepe instance build call")
+                        phonepeDismissErrorMsg(eMsg);
+                        window.scrollTo(0,$('#paymentFailureMsg').offset().top-100)
+                        window.location.reload();
+                      })
+                    } catch (error) {
+                      const errMsg = error && error.message ? error.message : ''
+                      logToPapertrail("phonepe"+errMsg+'.Error occured after phonepe affiliate call in try catch statement')
+                    }
+                    
+                  },
+                  error: function (request, status, error) {
+                    $('.load_overlay').hide();
+                    if(request.status === 401){
+                        window.location.href="/logout?utm_source=phonepe_affiliate";
+                    }
+                    phonepeDismissErrorMsg("Some error occured. Please try again!");
+                    window.scrollTo(0,$('#paymentFailureMsg').offset().top-100)
+                    window.location.reload();
+                  }
+                })
+              }
+              else{
+                var phonepe_data = {}
+                phonepe_data.request = result.response.phonepe.base64Body
+                var url_for = local_data.payments_url + "phonepe/debit.json";
+                $.ajax({url: url_for,
+                  crossDomain: true,
+                  method: "POST",
+                  headers:{
+                    "Content-Type": 'application/json',
+                    "x-verify": result.response.phonepe.checksum
+                  },
+                  data: JSON.stringify(phonepe_data),
+                  success: function (phonepe_result) {
+
+                    phonepe_redirect_url = local_data.phonepe_url + phonepe_result.redirect_url;
+
+                    window.location = phonepe_redirect_url ;
+                  },
+                  error: function (request, status, error) {
+                    if(request.status === 400){
+                        //window.location.href="/logout";
+                        phonepeDismissErrorMsg("Something went wrong. Please try again.");
+                        window.scrollTo(0,$('#paymentFailureMsg').offset().top-100)
+                        window.location.reload();
+                    }
+                    $('.load_overlay').hide();
+                    console.log(error);
+                  }
+                })
+              }
+            } else if (result.response.paypal) {
+              /* Formatting End*/
+              console.log(result)
+              window.location = result.response.paypal.links[1].href;
+
+            } else if (result.response.gpay) {
+                if (result.response.gpay.payment_initiated) {
+                  window.location = '/gpay/'+result.response.order_id;
+                }
+                else{
+                  $('.load_overlay').hide();
+                  alert_err_message(result.response.gpay.msg);
+                  window.scrollTo(0,$('#paymentFailureMsg').offset().top-100);
+                  window.location.reload();
+                }
+            } else if (result.response.sodexo){
+              window.location = result.response.sodexo.redirect_url ;
+            }  else if (result.response.telr && payment_method == 'telr') {
+              window.location = result.response.telr.order.url
+            } else {
+              window.location = '/payment/success';
+            }
+          } else {
+            $('.load_overlay').hide();
+            if(localStorage.getItem("gtm_source") === 'phonepe_affiliate'){
+              phonepeDismissErrorMsg(result.message);
+              window.scrollTo(0,$('#paymentFailureMsg').offset().top-100)
+            } else {
+              alert_err_message(result.message);
+            }
+          }
+        },
+        error: function (request, status, err) {
+          if (request.status === 401) {
+            window.location.href = "/logout";
+          }
+          if (status == "error") {
+            window.location = '/collections';
+          }
+
+        }
+      });
+    }
+    function detectCardType(number) {
+      var re = {
+        electron: /^(4026|417500|4405|4508|4844|4913|4917)\d+$/,
+        maestro: /^(5018|5020|5038|5612|5893|6304|6759|6761|6762|6763|0604|6390)\d+$/,
+        dankort: /^(5019)\d+$/,
+        interpayment: /^(636)\d+$/,
+        unionpay: /^(62|88)\d+$/,
+        visa: /^4[0-9]{6,}$/,
+        mastercard: /^5[1-5][0-9]{5,}$/,
+        amex: /^3[47][0-9]{13}$/,
+        diners: /^3(?:0[0-5]|[68][0-9])[0-9]{11}$/,
+        jcb: /^(?:2131|1800|35\d{3})\d{11}$/,
+        rupay: /^((508[5-9][0-9])|(6069[8-9][0-9])|(607[0-8][0-9])|(6079[0-8][0-9])|(608[0-5][0-9])|(6521[5-9][0-9])|(652[2-9][0-9])|(6530[0-9])|(6531[0-4][0-9]))/
+      };
+      if (re.electron.test(number)) {
+        return 'ELECTRON';
+      } else if (re.maestro.test(number)) {
+        return 'MAESTRO';
+      } else if (re.dankort.test(number)) {
+        return 'DANKORT';
+      } else if (re.interpayment.test(number)) {
+        return 'INTERPAYMENT';
+      } else if (re.unionpay.test(number)) {
+        return 'UNIONPAY';
+      } else if (re.visa.test(number)) {
+        return 'VISA';
+      } else if (re.mastercard.test(number)) {
+        return 'mastercard';
+      } else if (re.amex.test(number)) {
+        return 'AMEX';
+      } else if (re.diners.test(number)) {
+        return 'DINERS';
+      } else if (re.jcb.test(number)) {
+        return 'JCB';
+      } else if (re.rupay.test(number)) {
+        return 'rupay';
+      } else {
+        return undefined;
+      }
+    }
+
+    $("#citrusNumber").on('keyup', function () {
+      var card_type = detectCardType($(this).val());
+
+      //console.log("--------------" + card_type);
+      if (card_type == "VISA") {
+        $("#citrusScheme").val(card_type);
+        $("#citrusNumber").removeClass('debit');
+        $("#citrusNumber").removeClass('masterCard');
+        $("#citrusNumber").addClass('visa');
+      }
+      else if (card_type == "mastercard") {
+        $("#citrusScheme").val(card_type);
+        $("#citrusNumber").removeClass('debit');
+        $("#citrusNumber").removeClass('visa');
+        $("#citrusNumber").addClass('masterCard');
+      } else if (card_type == 'rupay') {
+        $("#citrusScheme").val(card_type);
+        $("#citrusNumber").removeClass('visa');
+        $("#citrusNumber").removeClass('masterCard');
+        $("#citrusNumber").addClass('debit');
+      } else {
+        $("#citrusNumber").removeClass('visa');
+        $("#citrusNumber").removeClass('masterCard');
+        $("#citrusNumber").addClass('debit');
+      }
+
+    })
+
+
+
+    function IsAlphaNumeric(e, type) {
+      var specialKeys = new Array();
+      specialKeys.push(8); //Backspace
+      specialKeys.push(9); //Tab
+      specialKeys.push(46); //Delete
+      specialKeys.push(36); //Home
+      specialKeys.push(35); //End
+      specialKeys.push(37); //Left
+      specialKeys.push(39); //Right
+      specialKeys.push(32); //Space
+      var keyCode = e.keyCode == 0 ? e.charCode : e.keyCode;
+      var ret = false;
+      if (type == 'cardholder') {
+        ret = ((keyCode >= 48 && keyCode <= 57) || (keyCode >= 65 && keyCode <= 90) || (keyCode >= 97 && keyCode <= 122) || (specialKeys.indexOf(e.keyCode) != -1 && e.charCode != e.keyCode) || (keyCode == 32));
+      }
+      if ((type == 'cardnumber') || (type == 'cvv')) {
+        ret = ((keyCode >= 48 && keyCode <= 57) || (keyCode >= 65 && keyCode <= 90) || (keyCode >= 97 && keyCode <= 122) || (specialKeys.indexOf(e.keyCode) != -1 && e.charCode != e.keyCode));
+      }
+      return ret;
+    }
+
+
+    $("#citrusCardHolder").on('keypress', function (e) {
+      var ret = IsAlphaNumeric(e, 'cardholder');
+      return ret;
+    });
+
+    $("#citrusNumber").on('keypress', function (e) {
+      var ret = IsAlphaNumeric(e, 'cardnumber');
+      if (ret) {
+        if ($(this).val().length >= 16) {
+          return false;
+        }
+        else {
+          return true;
+        }
+      } else {
+        return ret;
+      }
+    });
+
+    $("#citrusCvv").on('keypress', function (e) {
+      var ret = IsAlphaNumeric(e, 'cvv');
+      if (ret) {
+        if ($(this).val().length >= 3) {
+          return false;
+        }
+        else {
+          return true;
+        }
+      } else {
+        return ret;
+      }
+    });
+
+    $("#gpayPhoneNumber").on('keyup', function(){
+      if(this.value.length != 10){
+        $('#gpayPhoneNumberErr').text("Please Enter 10-digit Number");
+      }
+      else{
+        $('#gpayPhoneNumberErr').text("");
+      }
+    });
+
+    $("#gpayPhoneNumber").on('keypress', function(evt){
+      var charCode = (evt.which) ? evt.which : event.keyCode
+      if (charCode > 31 && (charCode < 48 || charCode > 57))
+        return false;
+      return true;
+    });
+
+    $("#changeGpayPhone").on('click', function(){
+      $("#gpayPhoneNumber").prop('disabled', false);
+      $("#changeGpayPhone").css('display', "none");
+      $(".payment_method_selection").attr("aria-expanded","false");
+    })
+
+    // function update_payable_amount() {
+
+    //   $.ajax({
+    //     url: "/update_payable_amount",
+    //     crossDomain: false,
+    //     type: 'POST',
+    //     data: {checked: $("#useFaasosCredit").is(':checked')},
+    //     success: function (result) {
+    //       console.log(result);
+    //     },
+    //     error: function (request, status, error) {
+
+    //     }
+    //   })
+    // }
+
+    function phonepeOrderStatusCheck(url,data_body){
+      $.ajax({url: url,
+        crossDomain: true,
+        method: "POST",
+        headers:{
+          "Content-Type": 'application/json',
+          "Client-Os": "WebApp"
+        },
+        beforeSend: function () {
+          $('.load_overlay').show();
+        },
+        data: JSON.stringify(data_body),
+        success: function (order_status_result) {
+          $('.load_overlay').hide();
+          logToPapertrail('phonepe success in openPaymentsPage. Order Status API called successfully')
+          if(order_status_result.success && order_status_result.success === true){
+            window.location = '/payment/success'
+          }  
+          else{
+            phonepeDismissErrorMsg("Payment Failed. Please Try Again");
+            window.scrollTo(0,$('#paymentFailureMsg').offset().top-100)
+          }
+        },
+        error: function (request, status, error) {
+          $('.load_overlay').hide();
+          logToPapertrail('phonepe success in openPaymentsPage. Order Status API ajax error thrown')
+          if(request.status === 401){
+              window.location.href="/logout";
+          }
+          else{
+            phonepeDismissErrorMsg("Payment Failed. Please Try Again");
+            window.scrollTo(0,$('#paymentFailureMsg').offset().top-100)
+          }
+        }
+      })
+    }
+
+    function logToPapertrail(logMessage){
+      console.log('in log to papertrail')
+      $.ajax({
+        url: "/log_msg",
+        crossDomain: false,
+        type: 'POST',
+        headers: {
+          'Client-Os': 'WebApp',
+          'darthvader': local_data.access_token
+        },
+        // contentType: "application/json; charset=utf-8",              
+        data: {
+          message: logMessage
+        },
+        success: function(response){
+          console.log('Message logged successfully')
+        },
+        error: function (request, status, error) {
+          console.log(error);
+        }
+      })
+    }
+  
+  });

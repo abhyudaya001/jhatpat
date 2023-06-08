@@ -1,0 +1,189 @@
+$(document).ready(function() {
+	try {
+		if(localStorage.getItem("gtm_source")==='phonepe_affiliate'){
+			$(".micrositesWrapper").hide();
+			$(".smsAppLinkWrapper").hide();
+			$(".mediaWrapper").hide();
+			$("footer").hide();
+			$(".headerButton").hide()
+			$(".downloadAppWrapper").hide()
+		}
+		else{
+			if(locale_data){
+				if(locale_data.gtm_source==='phonepe_affiliate'){
+					$(".micrositesWrapper").hide();
+					$(".smsAppLinkWrapper").hide();
+					$(".mediaWrapper").hide();
+					$("footer").hide();
+					$(".headerButton").hide()
+					$(".downloadAppWrapper").hide()
+				}
+			}
+		}
+	} catch (error) {
+	}
+		
+	//console.log($('#location-id').find('.faasos-Location-pin').next().text())
+	if($('#location-id').find('.faasos-Location-pin').next().text() == ' undefined'){
+		$('#location-id').css("visibility", "hidden");
+	}else{
+		$('#location-id').css("visibility", "visible");
+	}
+			
+	    // Scroll to top button
+		var footerHeight;
+		//Check to see if the window is top if not then display button
+		$(window).scroll(function(){
+			if ($(this).scrollTop() > 600) {
+				$('.scrollToTop').fadeIn();
+			}
+			else {
+				$('.scrollToTop').fadeOut();
+			}
+
+			footerHeight = $("footer").innerHeight() + $('.footer2').innerHeight();
+			if($(window).scrollTop() + $(window).height() < $(document).height() - footerHeight) {
+			        $('.scrollToTop').css("position","fixed");    //resetting it
+			        $('.scrollToTop').css("bottom","0"); //resetting it
+			}
+            if($(window).scrollTop() + $(window).height() > $(document).height() - footerHeight) {
+                    $('.scrollToTop').css("position","absolute"); 
+                    $('.scrollToTop').css("bottom",footerHeight); 
+ 			}			
+
+		});
+		
+		//Click event to scroll to top
+		$('.scrollToTop').click(function(){
+			$('html, body').animate({scrollTop : 0},800);
+			return false;
+		});
+
+	// Add class to body on modal reveal
+	$(document).on('open.fndtn.reveal', '[data-reveal]', function () {
+	  var modal = $(this);
+	  $('body').addClass('modal-open');
+	});
+	$(document).on('close.fndtn.reveal', '[data-reveal]', function () {
+	  var modal = $(this);
+	  $('body').removeClass('modal-open');
+	});
+
+	// Animate Icons
+
+
+	//Animate Hamburger menu and Slide in menu items
+	var menuIcon = document.getElementById('menuIconAnim');
+    var menuIconAnimateOpenOptions = {
+        from: 'faasos-menu',
+        to: 'faasos-closesimple',
+        animation: 'rubberBand'
+    };
+    var menuIconAnimateCloseOptions = {
+        from: 'faasos-closesimple',
+        to: 'faasos-menu',
+        animation: 'rubberBand'
+    };
+
+    $(document).on('open.fndtn.offcanvas', '[data-offcanvas]', function () {
+  		iconate(menuIcon, menuIconAnimateOpenOptions);
+		// $(".off-canvas-list li").each(function(index) {
+		// 	var $li = $(this);
+		//     setTimeout(function() {
+		//       $li.removeClass('animated slideOutLeft').addClass('animated slideInLeft');
+		//     }, index*10); // delay 100 ms
+
+		// });  		
+	});
+
+	$(document).on('close.fndtn.offcanvas', '[data-offcanvas]', function () {
+  		iconate(menuIcon, menuIconAnimateCloseOptions);  
+		// $($('.off-canvas-list li').get().reverse()).each(function(index) {
+		//     var $li = $(this);
+		//     setTimeout(function() {
+		//       $li.removeClass('animated slideInLeft');
+		//     }, index*10); // delay 100 ms
+		//   });
+
+	});    
+
+	//Animate Section Heading Icon Fonts
+	$(".sectionSubHeading span:not(.subHeading)").each(function(index) {
+		var subHeadingIcon = $(this);
+		//console.log("subheadingicon",subHeadingIcon);
+		setTimeout(function() {
+		    $(subHeadingIcon).addClass('animated fadeInDown');
+		}, 400); // delay 100 ms
+	});
+
+	//Animate Cart Numbers
+	  var $animateCart = $('.total_amount');
+	  animateNumbers($animateCart);
+
+
+
+	$(document).on('open.fndtn.offcanvas', '[data-offcanvas]', function() {
+	  $('html').css('overflow', 'hidden');
+	});
+	$(document).on('close.fndtn.offcanvas', '[data-offcanvas]', function() {
+	  $('html').css('overflow', 'auto');
+	});
+
+
+	$('a.disabled').click(function(e) {
+		e.preventDefault();
+	});
+}); //Document ready ends here
+
+//Animate Edit Icon on Profile page
+var editIcons = document.querySelectorAll('.edit');
+//console.log(editIcon);
+    var editIconAnimateOpenOptions = {
+            from: 'faasos-pencil',
+            to: 'faasos-check',
+            animation: 'fadeOutTop'
+    };
+    var editIconAnimateCloseOptions = {
+            from: 'faasos-check',
+            to: 'faasos-pencil',
+            animation: 'fadeOutTop'
+    };        
+	for (i = 0; i < editIcons.length; ++i) {
+	//console.log(editIcons[i]);
+	editIcons[i].addEventListener('click', function() {
+
+		  	if(hasClass(this, 'faasos-pencil')) {
+		  		//console.log("if",this.className);
+		    	iconate(this, editIconAnimateOpenOptions);
+		  	}
+		  	else {
+		  		//console.log("else",this.className);
+		  		iconate(this, editIconAnimateCloseOptions);
+		  	}
+
+		});
+	}
+
+function hasClass(element, className) {
+    return element.className && new RegExp("(^|\\s)" + className + "(\\s|$)").test(element.className);
+}	
+
+function animateNumbers(element){
+  		$({ Counter: 0 }).animate({ Counter: element.text() }, {
+	    	duration: 2000,
+    		easing: 'swing',
+	    	step: function () {
+      			element.text(Math.ceil(this.Counter));
+    		}	
+  		});
+}
+// (function($){
+// 	$(window).load(function(){
+// 	    $(".left-off-canvas-menu").mCustomScrollbar({
+// 	    	theme:"minimal"
+// 	    });
+// 	    $("body").mCustomScrollbar({
+// 	    	theme:"minimal-dark"
+// 	    });	    
+// 	});	
+//})(jQuery);
